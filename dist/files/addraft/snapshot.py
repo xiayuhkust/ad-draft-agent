@@ -17,7 +17,9 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-DEFAULT_SNAPSHOT_DIR = Path(__file__).resolve().parent.parent / "data" / "snapshot"
+from .paths import ROOT as _ROOT
+
+DEFAULT_SNAPSHOT_DIR = _ROOT / "data" / "snapshot"
 CDN_BASE = "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react"
 
 

@@ -13,8 +13,9 @@ import json
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-URL_FILE = ROOT / "update_url.txt"
+from .paths import EXE_DIR, IS_FROZEN, ROOT
+
+URL_FILE = EXE_DIR / "update_url.txt"
 
 
 def _sha(path: Path) -> str:
@@ -39,6 +40,9 @@ def check_and_update() -> dict:
     data_prefixes = tuple(manifest.get("dataPrefixes", ()))
     updated, code_changed = [], False
     for rel, remote_hash in manifest["files"].items():
+        is_data = rel.startswith(data_prefixes)
+        if IS_FROZEN and not is_data:
+            continue  # exe 里代码已编译，替换 .py 无效；出新版走安装包
         local = ROOT / rel
         if local.exists() and _sha(local) == remote_hash:
             continue
@@ -52,10 +56,14 @@ def check_and_update() -> dict:
         updated.append(rel)
         if not rel.startswith(data_prefixes):
             code_changed = True
+    local_app = (ROOT / "VERSION").read_text(encoding="utf-8").strip() \
+        if (ROOT / "VERSION").exists() else "?"
     return {
         "enabled": True,
         "updated": updated,
         "codeChanged": code_changed,
         "appVersion": manifest.get("appVersion"),
         "dataVersion": manifest.get("dataVersion"),
+        # 冻结版代码不热更：远端 app 版本更高时提示下载新安装包
+        "newInstaller": IS_FROZEN and manifest.get("appVersion") != local_app,
     }

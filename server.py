@@ -18,13 +18,16 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-if sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
-    sys.stdout.reconfigure(encoding="utf-8")
+if sys.stdout and (sys.stdout.encoding or "").lower() not in ("utf-8", "utf8"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 from addraft.vision import Recognizer, imdecode_bytes
 from addraft import updater
+from addraft.paths import ROOT
 
-ROOT = Path(__file__).resolve().parent
 WEB = ROOT / "web"
 
 
@@ -57,7 +60,7 @@ class Handler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(WEB), **kwargs)
 
     def log_message(self, fmt, *args):
-        msg = args[0] if args else ""
+        msg = str(args[0]) if args else ""  # 可能是 HTTPStatus 等非字符串
         if "/api/" in msg and "/api/state" not in msg:  # 轮询不刷屏
             super().log_message(fmt, *args)
 
@@ -102,12 +105,16 @@ class Handler(SimpleHTTPRequestHandler):
         return self._json(result)
 
 
-def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+def serve(port: int = 8080):
+    """可被 exe（AD 盒子）作为线程调用，也可独立进程运行。"""
     threading.Thread(target=auto_update, daemon=True).start()
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     print(f"服务器启动: http://localhost:{port}  (静态目录: {WEB})")
     server.serve_forever()
+
+
+def main():
+    serve(int(sys.argv[1]) if len(sys.argv) > 1 else 8080)
 
 
 if __name__ == "__main__":

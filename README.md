@@ -11,6 +11,12 @@ Dota 2 技能征召（Ability Draft）辅助工具集，数据来自 [windrun.io
 
 ## 玩家使用
 
+**方式一（推荐）：安装包** —— 从 [Releases](https://github.com/xiayuhkust/ad-draft-agent/releases)
+下载 `ADBox-Setup-x.x.x.exe`，安装向导里可选快捷键与开机启动（默认关闭）。
+安装后数据每日自动热更；程序新版本需下载新安装包（面板会提示）。
+
+**方式二：源码运行**
+
 ```
 pip install mss pywebview opencv-python-headless
 python plugin/overlay.py        # 自动拉起本地服务并打开悬浮面板

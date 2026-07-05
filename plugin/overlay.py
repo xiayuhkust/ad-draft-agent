@@ -1,37 +1,67 @@
 """AD 盒子：置顶可拖动的悬浮识别面板（PC 端一体化入口）。
 
-    python plugin/overlay.py
+    python plugin/overlay.py          # 源码运行
+    ADBox.exe                         # 打包运行（安装版）
 
-- 自动确保本地识别服务在跑（没有就拉起 server.py）
-- 悬浮窗：无边框、置顶、宽 480，顶栏可拖动（布局同手机版面板）
-- 识别触发：全局热键 Ctrl+Shift+O 或面板上的 📷 按钮
-- 游戏建议使用"无边框窗口"模式（独占全屏可能截到黑屏/挡住悬浮窗）
+- 识别服务在本进程内以线程运行（已有外部服务在跑则直接复用）
+- 快捷键可配置：exe 旁 config.json 的 "hotkey"（如 "ctrl+shift+o"、"f9"），
+  安装器的快捷键选择页写的就是这个文件
+- 游戏建议"无边框窗口"模式（独占全屏挡悬浮窗/截黑屏）
 """
 
 import ctypes
 import ctypes.wintypes as wt
-import subprocess
+import json
 import sys
 import threading
 import time
 import urllib.request
 from pathlib import Path
 
+# windowed exe 没有控制台：stdout/stderr 为 None，print 会崩 → 重定向到日志文件
+if getattr(sys, "frozen", False) and (sys.stdout is None or sys.stderr is None):
+    _log = open(Path(sys.executable).parent / "adbox.log", "a",
+                encoding="utf-8", buffering=1)
+    sys.stdout = sys.stdout or _log
+    sys.stderr = sys.stderr or _log
+
 import webview
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+_HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(_HERE))          # hotkey_capture
+sys.path.insert(0, str(_HERE.parent))   # addraft / server（源码运行时）
+
+from addraft.paths import EXE_DIR
 from hotkey_capture import capture_primary, send
 
-ROOT = Path(__file__).resolve().parent.parent
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 BASE = f"http://localhost:{PORT}"
+CONFIG_PATH = EXE_DIR / "config.json"
 
-MOD_CONTROL, MOD_SHIFT = 0x0002, 0x0004
-VK_O = 0x4F
 WM_HOTKEY = 0x0312
-
+MODS = {"ctrl": 0x0002, "shift": 0x0004, "alt": 0x0001, "win": 0x0008}
 FULL_H, FOLD_H = 820, 42
 window = None
+
+
+def load_hotkey():
+    """config.json 的 hotkey 字符串 → (修饰键位掩码, 虚拟键码, 显示名)。"""
+    spec = "ctrl+shift+o"
+    try:
+        spec = json.loads(CONFIG_PATH.read_text(encoding="utf-8")).get("hotkey", spec)
+    except Exception:
+        pass
+    mods, vk = 0, None
+    for part in spec.lower().replace(" ", "").split("+"):
+        if part in MODS:
+            mods |= MODS[part]
+        elif len(part) == 1 and (part.isalpha() or part.isdigit()):
+            vk = ord(part.upper())
+        elif part.startswith("f") and part[1:].isdigit() and 1 <= int(part[1:]) <= 12:
+            vk = 0x70 + int(part[1:]) - 1
+    if vk is None:
+        mods, vk, spec = MODS["ctrl"] | MODS["shift"], ord("O"), "ctrl+shift+o"
+    return mods, vk, spec
 
 
 def server_alive() -> bool:
@@ -44,14 +74,13 @@ def server_alive() -> bool:
 
 def ensure_server():
     if server_alive():
+        print("检测到已有识别服务，直接复用")
         return
-    print("识别服务未运行，自动拉起 server.py ...")
-    subprocess.Popen([sys.executable, str(ROOT / "server.py"), str(PORT)],
-                     cwd=str(ROOT),
-                     creationflags=subprocess.CREATE_NEW_CONSOLE)
+    import server  # 首次导入即加载识别引擎（模板入内存）
+    threading.Thread(target=server.serve, args=(PORT,), daemon=True).start()
     for _ in range(60):
         if server_alive():
-            print("识别服务就绪")
+            print("识别服务就绪（进程内线程）")
             return
         time.sleep(1)
     raise RuntimeError("识别服务启动失败")
@@ -94,11 +123,12 @@ def topmost_keeper():
 
 
 def hotkey_loop():
+    mods, vk, spec = load_hotkey()
     user32 = ctypes.windll.user32
-    if not user32.RegisterHotKey(None, 1, MOD_CONTROL | MOD_SHIFT, VK_O):
-        print("热键 Ctrl+Shift+O 注册失败（可能被占用），仍可用面板按钮触发")
+    if not user32.RegisterHotKey(None, 1, mods, vk):
+        print(f"热键 {spec} 注册失败（可能被占用），仍可用面板 📷 按钮触发")
         return
-    print("热键就绪: Ctrl+Shift+O")
+    print(f"热键就绪: {spec}")
     msg = wt.MSG()
     while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) != 0:
         if msg.message == WM_HOTKEY and msg.wParam == 1:

@@ -105,8 +105,9 @@ class Recognizer:
     """常驻内存的识别器：模板一次加载，多次请求复用。"""
 
     def __init__(self, snapshot: Snapshot | None = None, img_dir: Path | None = None):
+        from .paths import ROOT
         self.snap = snapshot or Snapshot.load()
-        img_dir = img_dir or Path(__file__).resolve().parent.parent / "web" / "img"
+        img_dir = img_dir or ROOT / "web" / "img"
         self.t_ult, self.t_hero = [], []
         for a in self.snap.draftable():
             if a.is_hero_body:
