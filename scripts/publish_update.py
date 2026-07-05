@@ -37,8 +37,9 @@ INCLUDE = [
 ]
 INCLUDE_DIRS = ["web/img"]  # 图标：全部列入清单，哈希不变不下载
 
-# 数据文件路径前缀：更新器对它们"热更"（无需重启）
-DATA_PREFIXES = ("web/data/", "web/img/")
+# "热更"路径前缀（无需重启/无需新安装包）：整个 web/ ——
+# 页面是 webview 加载的内容而非编译进 exe 的代码，UI 修复可直达安装版用户
+DATA_PREFIXES = ("web/",)
 
 
 def sha(path: Path) -> str:

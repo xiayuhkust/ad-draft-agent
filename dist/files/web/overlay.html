@@ -121,6 +121,7 @@ setInterval(async () => {
     if (s.result && s.result.ok) {
       $("#status").textContent = `识别于 ${s.at} · 锁定 ${s.result.lockedCount}/12`;
       render(s.result);
+      if (folded) setFold(false);  // 折叠时收到新结果 → 自动展开（实战反馈）
     } else if (s.result) {
       $("#status").textContent = s.result.reason || "识别失败";
     }
@@ -133,11 +134,13 @@ $("#btn-cap").onclick = async () => {
   if (window.pywebview) window.pywebview.api.capture();
 };
 let folded = false;
-$("#btn-fold").onclick = () => {
-  folded = !folded;
+function setFold(f) {
+  folded = f;
   $("#content").style.display = folded ? "none" : "";
+  $("#btn-fold").textContent = folded ? "▼" : "▁";
   if (window.pywebview) window.pywebview.api.fold(folded);
-};
+}
+$("#btn-fold").onclick = () => setFold(!folded);
 $("#btn-close").onclick = () => { if (window.pywebview) window.pywebview.api.close(); };
 </script>
 </body>
