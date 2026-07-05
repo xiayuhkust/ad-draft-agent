@@ -11,3 +11,4 @@ state_tmp.json
 
 # 打包产物
 build/
+last_fail.png

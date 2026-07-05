@@ -93,15 +93,23 @@ class Handler(SimpleHTTPRequestHandler):
         t0 = time.time()
         result = recognizer.recognize(img)
         result["elapsedMs"] = int((time.time() - t0) * 1000)
+        # 成败都要推给面板——失败不更新状态会让面板永远停在"识别中…"
+        with state_lock:
+            state["seq"] += 1
+            state["result"] = result
+            state["at"] = time.strftime("%H:%M:%S")
         if result.get("ok"):
-            with state_lock:
-                state["seq"] += 1
-                state["result"] = result
-                state["at"] = time.strftime("%H:%M:%S")
             print(f"识别成功：锁定 {result['lockedCount']} 席 "
                   f"({result['elapsedMs']}ms) → {result['heroes']}")
         else:
-            print(f"识别失败：{result.get('reason')}")
+            print(f"识别失败：{result.get('reason')} ({result['elapsedMs']}ms)")
+            # 存失败现场供排障（截到黑屏/副屏/非草稿界面一看便知）
+            try:
+                from addraft.paths import EXE_DIR
+                (EXE_DIR / "last_fail.png").write_bytes(data)
+                print(f"失败截图已存: {EXE_DIR / 'last_fail.png'}")
+            except Exception:
+                pass
         return self._json(result)
 
 

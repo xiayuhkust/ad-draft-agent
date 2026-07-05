@@ -26,7 +26,9 @@ HOTKEY_ID = 1
 
 def capture_primary() -> bytes:
     with mss.mss() as sct:
-        mon = sct.monitors[1]  # 主显示器
+        # monitors[0] = 全部显示器拼接的虚拟桌面：游戏在副屏也能截到，
+        # 识别引擎自己会在整幅画面里定位角标
+        mon = sct.monitors[0]
         shot = sct.grab(mon)
         return mss.tools.to_png(shot.rgb, shot.size)
 

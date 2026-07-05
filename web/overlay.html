@@ -122,7 +122,7 @@ setInterval(async () => {
       $("#status").textContent = `识别于 ${s.at} · 锁定 ${s.result.lockedCount}/12`;
       render(s.result);
     } else if (s.result) {
-      $("#status").textContent = "未检测到选人界面";
+      $("#status").textContent = s.result.reason || "识别失败";
     }
   } catch (e) { $("#status").textContent = "服务器未连接"; }
 }, 1200);
