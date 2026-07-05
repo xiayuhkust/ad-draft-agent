@@ -1,14 +1,14 @@
 {
  "appVersion": "1.2.0",
  "dataVersion": "7.41d-2026-07-04",
- "publishedAt": "2026-07-05T08:28:55",
+ "publishedAt": "2026-07-05T08:44:02",
  "dataPrefixes": [
   "web/data/",
   "web/img/"
  ],
  "files": {
   "VERSION": "1e5b51cde515396a",
-  "server.py": "4be54d0f260d7ab3",
+  "server.py": "e4411fdcd27b7b0a",
   "addraft/__init__.py": "7a6d9e0b3c5deba1",
   "addraft/snapshot.py": "d34572a3f75b7590",
   "addraft/draft.py": "0cc4dadf2ad1d5a0",

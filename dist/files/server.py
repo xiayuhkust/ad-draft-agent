@@ -57,7 +57,8 @@ class Handler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(WEB), **kwargs)
 
     def log_message(self, fmt, *args):
-        if "/api/" in (args[0] if args else ""):
+        msg = args[0] if args else ""
+        if "/api/" in msg and "/api/state" not in msg:  # 轮询不刷屏
             super().log_message(fmt, *args)
 
     def _json(self, obj, code=200):
