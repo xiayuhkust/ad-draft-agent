@@ -29,7 +29,19 @@ def main():
         if run(script) != 0:
             print(f"{script} 失败，中止")
             return 1
-    print("\n每日发布完成。把 dist/ 同步到托管即完成推送（或在托管机直接跑本脚本）。")
+    if "--push" in sys.argv:
+        print("\n=== git 提交并推送 ===")
+        subprocess.call(["git", "add", "-A"], cwd=str(ROOT))
+        # 无变化时 commit 返回非 0，属正常（windrun 数据未变）
+        if subprocess.call(["git", "commit", "-m", "daily data release"], cwd=str(ROOT)) == 0:
+            if subprocess.call(["git", "push"], cwd=str(ROOT)) != 0:
+                print("git push 失败")
+                return 1
+            print("已推送，玩家端将自动热更")
+        else:
+            print("数据无变化，无需推送")
+    else:
+        print("\n每日发布完成。把 dist/ 同步到托管即完成推送（加 --push 自动执行）。")
     return 0
 
 
