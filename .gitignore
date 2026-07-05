@@ -1,0 +1,10 @@
+# 私人对局截图/实验样本，不进公开仓库
+input/
+
+# 玩家本地配置（指向更新源；开发机放了会回滚本地改动）
+update_url.txt
+
+# 运行时产物
+__pycache__/
+*.pyc
+state_tmp.json

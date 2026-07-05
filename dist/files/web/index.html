@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AD 草稿陪练</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161d29; --panel2:#1d2636; --line:#2a3548;
+  --text:#dce3ee; --dim:#8b98ac; --gold:#e8b64a; --green:#5fd38a; --red:#e06c6c;
+  --blue:#5aa9e6; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,"PingFang SC","Microsoft YaHei",sans-serif;max-width:520px;margin:0 auto;padding-bottom:90px}
+.hidden{display:none!important}
+button{font:inherit;border:0;cursor:pointer;border-radius:var(--radius)}
+
+/* 口令门 */
+#gate{position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.gate-box{text-align:center;padding:32px 28px;background:var(--panel);border:1px solid var(--line);border-radius:16px;width:min(320px,86vw)}
+#gate-input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:16px;text-align:center;outline:none}
+#gate-input:focus{border-color:var(--gold)}
+#gate-btn{width:100%;padding:12px;background:var(--gold);color:#1a1408;font-size:16px;font-weight:700;margin-top:10px}
+
+/* 顶栏 */
+#topbar{position:sticky;top:0;z-index:20;background:rgba(13,17,23,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;align-items:center;gap:8px}
+#topbar .title{font-weight:700;color:var(--gold)}
+#topbar .meta{font-size:12px;color:var(--dim);flex:1}
+#btn-restart{padding:5px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);font-size:12px}
+.switch{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--dim)}
+.switch .knob{width:40px;height:22px;border-radius:11px;background:#333e52;position:relative;transition:.2s}
+.switch .knob::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#aab6c8;transition:.2s}
+.switch.on .knob{background:var(--gold)}
+.switch.on .knob::after{left:20px;background:#1a1408}
+
+/* 开始屏 */
+#start{padding:28px 20px;text-align:center}
+#start h1{color:var(--gold);font-size:26px;margin:18px 0 4px}
+#start .sub{color:var(--dim);font-size:13px;margin-bottom:26px}
+#seats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 20px}
+#seats button{padding:12px 0;background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+#seats button.sel{background:var(--gold);color:#1a1408;font-weight:700}
+#btn-start{width:100%;padding:14px;background:var(--gold);color:#1a1408;font-size:17px;font-weight:700}
+#btn-manual{width:100%;padding:13px;background:var(--panel2);color:var(--text);border:1px solid var(--gold);font-size:15px;margin-top:10px}
+.btn-alt{width:100%;padding:13px;background:var(--panel2);color:var(--text);border:1px solid var(--line);font-size:15px;margin-top:10px}
+.btn-alt.busy{border-color:var(--blue);color:var(--blue)}
+.side-note{font-size:12px;color:var(--dim);margin-top:6px}
+
+/* 手动选池 */
+#picker{padding:0 12px 80px}
+.pick-head{position:sticky;top:41px;z-index:19;display:flex;align-items:center;gap:10px;padding:10px 0;background:var(--bg)}
+.pick-head button{padding:8px 14px;background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+#pick-count{flex:1;text-align:center;font-weight:700;color:var(--gold)}
+.attr-h{font-size:13px;font-weight:700;margin:12px 0 6px;display:flex;align-items:center;gap:6px}
+.attr-h::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c)}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.hp{border:2px solid transparent;border-radius:8px;overflow:hidden;position:relative;padding:0;background:var(--panel2)}
+.hp img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.hp.sel{border-color:var(--gold)}
+.hp.sel::after{content:"✓";position:absolute;top:1px;right:3px;color:var(--gold);font-weight:700;text-shadow:0 0 4px #000}
+.pick-foot{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(13,17,23,.94);border-top:1px solid var(--line)}
+#btn-go{width:100%;padding:13px;background:var(--gold);color:#1a1408;font-size:16px;font-weight:700}
+#btn-go:disabled{background:var(--panel2);color:var(--dim)}
+
+/* 我的阵容条 */
+#mybuild{position:sticky;top:41px;z-index:19;background:var(--panel);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;gap:8px;align-items:center}
+.slot{width:52px;height:52px;border-radius:8px;border:1.5px dashed var(--line);background:var(--panel2);overflow:hidden;position:relative;flex-shrink:0}
+.slot img{width:100%;height:100%;object-fit:cover;display:block}
+.slot .tag{position:absolute;bottom:0;left:0;right:0;font-size:9px;text-align:center;background:rgba(0,0,0,.65);color:var(--dim)}
+.slot.body-slot{border-color:var(--gold)}
+.slot.ult-slot{border-color:var(--blue)}
+#feed{font-size:12px;color:var(--dim);padding:4px 14px;min-height:22px}
+
+/* 池网格：每英雄一行五格（身板|大招|三小招） */
+#pool{padding:4px 8px}
+.wr-hi{color:var(--green)} .wr-lo{color:var(--red)} .wr-mid{color:var(--text)}
+.legend{font-size:11px;color:var(--dim);padding:2px 6px 6px;display:flex;gap:12px}
+.legend .k{display:inline-flex;align-items:center;gap:4px}
+.legend .sq{width:10px;height:10px;border-radius:3px;border:1.5px solid var(--line)}
+.hgroup{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:5px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line);margin-bottom:5px}
+.cell{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:4px 2px;text-align:center;min-width:0}
+.cell.body-c{border-color:var(--gold)}
+.cell.ult-c{border-color:var(--blue)}
+.cell.illegal{opacity:.38}
+.cell.taken{opacity:.3}
+.cell img.main{width:42px;height:42px;border-radius:7px;object-fit:cover}
+.cell .cwr{font-size:12px;font-weight:700;line-height:1.3}
+.cell .cpair{font-size:10px;color:var(--dim);display:flex;align-items:center;justify-content:center;gap:2px;line-height:1.4}
+.cell .cpair.star{color:var(--gold)}
+.cell .cpair.low-n{opacity:.55}
+.cell .cpair img{width:14px;height:14px;border-radius:3px;object-fit:cover}
+.cell .ctaken{font-size:10px;color:var(--dim)}
+
+/* 底部弹层 */
+#sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30}
+#sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--panel);border-radius:16px 16px 0 0;border:1px solid var(--line);padding:18px 16px calc(18px + env(safe-area-inset-bottom));z-index:31}
+#sheet .head{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+#sheet .head img{width:56px;height:56px;border-radius:10px}
+#sheet .stats{font-size:13px;color:var(--dim);margin:8px 0}
+#sheet .stats div{margin:3px 0}
+#btn-pick{width:100%;padding:13px;background:var(--gold);color:#1a1408;font-size:16px;font-weight:700;margin-top:8px}
+#btn-pick:disabled{background:var(--panel2);color:var(--dim)}
+
+/* 结算 */
+#result{padding:16px 14px}
+#result h2{color:var(--gold);margin:14px 0 8px;font-size:16px}
+.final-row{display:flex;align-items:center;gap:6px;padding:7px;border-radius:8px;margin-bottom:5px;background:var(--panel);border:1px solid var(--line)}
+.final-row.me{border-color:var(--gold)}
+.final-row img{width:34px;height:34px;border-radius:6px}
+.final-row .pname{font-size:11px;color:var(--dim);width:26px;flex-shrink:0}
+#btn-again{width:100%;padding:14px;background:var(--gold);color:#1a1408;font-size:16px;font-weight:700;margin-top:14px}
+.turn-banner{padding:6px 14px;font-size:13px;color:var(--gold)}
+</style>
+</head>
+<body>
+<div id="gate" class="hidden">
+  <div class="gate-box">
+    <div style="font-size:22px;color:var(--gold);font-weight:700;margin-bottom:6px">AD 草稿陪练</div>
+    <div style="font-size:13px;color:var(--dim);margin-bottom:16px">朋友内测中，请输入口令</div>
+    <input id="gate-input" type="text" placeholder="口令" autocomplete="off">
+    <button id="gate-btn">进入</button>
+    <div id="gate-err" style="font-size:12px;color:var(--red);margin-top:8px;visibility:hidden">口令不对哦</div>
+  </div>
+</div>
+
+<div id="topbar">
+  <span class="title">AD 陪练</span>
+  <span class="meta" id="meta"></span>
+  <button id="btn-restart" class="hidden">🔄 重开</button>
+  <div class="switch on" id="assist-switch"><span>助手</span><div class="knob"></div></div>
+</div>
+
+<div id="start">
+  <h1>Ability Draft 草稿陪练</h1>
+  <div class="sub" id="start-sub"></div>
+  <div>选择座位（0-4 天辉 / 5-9 夜魇）</div>
+  <div id="seats"></div>
+  <button id="btn-start">随机 12 英雄开局</button>
+  <button id="btn-manual">手动选池（输入本局 12 英雄）</button>
+  <div class="side-note">规则：1 身板 + 3 普通 + 1 大招，顺序自由</div>
+</div>
+
+<div id="picker" class="hidden">
+  <div class="pick-head">
+    <button id="btn-back">← 返回</button>
+    <span id="pick-count">已选 0/12</span>
+    <button id="btn-clear">清空</button>
+  </div>
+  <div id="hero-groups"></div>
+  <div class="pick-foot"><button id="btn-go" disabled>选满 12 个开始</button></div>
+</div>
+
+<div id="game" class="hidden">
+  <div id="mybuild"></div>
+  <div id="feed"></div>
+  <div class="turn-banner" id="banner"></div>
+  <div class="legend">
+    <span class="k"><span class="sq" style="border-color:var(--gold)"></span>身板</span>
+    <span class="k"><span class="sq" style="border-color:var(--blue)"></span>大招</span>
+    <span class="k"><span class="sq"></span>小招</span>
+    <span class="k">★配我已选 / ○池内潜力</span>
+  </div>
+  <div id="pool"></div>
+</div>
+
+<div id="result" class="hidden"></div>
+
+<div id="sheet-mask" class="hidden"></div>
+<div id="sheet" class="hidden"></div>
+
+<script src="data/bundle.js"></script>
+<script>
+const B = window.AD_BUNDLE;
+const CDN = "https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react";
+const byId = new Map(B.entries.map(e => [e.id, e]));
+const pairMap = new Map();
+const pairsOf = new Map();
+for (const [a, b, np, wr] of B.pairs) {
+  const k = a < b ? a + "_" + b : b + "_" + a;
+  pairMap.set(k, { np, wr });
+  if (!pairsOf.has(a)) pairsOf.set(a, []);
+  if (!pairsOf.has(b)) pairsOf.set(b, []);
+  pairsOf.get(a).push(b); pairsOf.get(b).push(a);
+}
+const pair = (a, b) => pairMap.get(a < b ? a + "_" + b : b + "_" + a);
+// 图标本地化（scripts/download_icons.py 预下载）；CDN 回退见 UI 段
+const icon = e => e.id < 0 ? `img/heroes/${e.s}.png` : `img/abilities/${e.s}.png`;
+const pct = x => (x * 100).toFixed(1) + "%";
+const wrClass = x => x >= 0.52 ? "wr-hi" : x <= 0.48 ? "wr-lo" : "wr-mid";
+const MIN_N = 200, LOW_N = 300;
+
+// ---------- 草稿引擎（与 Python 版同规则） ----------
+let G = null;
+function newGame(mySeat, heroIds) {
+  const heroes = heroIds
+    ? B.heroes.filter(h => heroIds.has(h.id))
+    : [...B.heroes].sort(() => Math.random() - .5).slice(0, 12);
+  const pool = new Set();
+  for (const h of heroes) { pool.add(h.body); h.ult.forEach(i => pool.add(i)); h.norm.forEach(i => pool.add(i)); }
+  const order = [];
+  for (let r = 0; r < 5; r++) {
+    const f = [...Array(10).keys()];
+    order.push(...(r % 2 ? f.reverse() : f));
+  }
+  G = { pool, order, pickNo: 0, mySeat, heroes,
+        players: [...Array(10)].map((_, i) => ({ i, body: null, abs: [] })) };
+}
+const ultCount = p => p.abs.filter(id => byId.get(id).u).length;
+const pickIds = p => (p.body !== null ? [p.body] : []).concat(p.abs);
+function isLegal(p, id) {
+  const e = byId.get(id);
+  if (!G.pool.has(id)) return false;
+  if (e.id < 0) return p.body === null;
+  const slots = 4 - p.abs.length;
+  if (slots === 0) return false;
+  if (e.u && ultCount(p) >= 1) return false;
+  if (!e.u && ultCount(p) === 0 && slots === 1) return false;
+  return true;
+}
+function applyPick(p, id) { G.pool.delete(id); const e = byId.get(id); e.id < 0 ? p.body = id : p.abs.push(id); G.pickNo++; }
+function bestPairWith(candId, ids, minN = MIN_N) {
+  let best = null;
+  for (const pid of ids) {
+    const pr = pair(candId, pid);
+    if (pr && pr.np >= minN && (!best || pr.wr > best.pr.wr)) best = { otherId: pid, pr };
+  }
+  return best;
+}
+function bestPairInPool(candId) {
+  let best = null;
+  for (const oid of (pairsOf.get(candId) || [])) {
+    if (!G.pool.has(oid) || oid === candId) continue;
+    const pr = pair(candId, oid);
+    if (pr.np >= MIN_N && (!best || pr.wr > best.pr.wr)) best = { otherId: oid, pr };
+  }
+  return best;
+}
+function aiPick(p) {
+  let bestId = null, bestScore = -9;
+  for (const id of G.pool) {
+    if (!isLegal(p, id)) continue;
+    const e = byId.get(id);
+    let s = (e.wr - .5);
+    const bp = bestPairWith(id, pickIds(p));
+    if (bp) s += (bp.pr.wr - .5) * .8;
+    s += (Math.random() - .5) * .02;
+    if (s > bestScore) { bestScore = s; bestId = id; }
+  }
+  return bestId;
+}
+
+// ---------- UI ----------
+const $ = q => document.querySelector(q);
+let assist = true, mySeat = 0;
+
+// 本地图标加载失败时自动回退 Valve CDN（如未来新英雄尚未下载）
+document.addEventListener("error", ev => {
+  const img = ev.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  const m = (img.getAttribute("src") || "").match(/img\/(heroes|abilities)\/(.+\.png)$/);
+  if (m) img.src = `${CDN}/${m[1]}/${m[2]}`;
+}, true);
+
+// ---------- 口令门（轻量防路人，非安全边界） ----------
+const GATE_CODE = "yiyoude";
+if (localStorage.getItem("ad_gate") !== GATE_CODE) {
+  $("#gate").classList.remove("hidden");
+  const tryGate = () => {
+    if ($("#gate-input").value.trim() === GATE_CODE) {
+      localStorage.setItem("ad_gate", GATE_CODE);
+      $("#gate").classList.add("hidden");
+    } else {
+      $("#gate-err").style.visibility = "visible";
+      $("#gate-input").value = "";
+    }
+  };
+  $("#gate-btn").onclick = tryGate;
+  $("#gate-input").addEventListener("keydown", e => { if (e.key === "Enter") tryGate(); });
+}
+
+$("#start-sub").textContent = `数据: windrun.io 快照 ${B.version} · patch ${B.patch}`;
+$("#meta").textContent = `patch ${B.patch}`;
+for (let i = 0; i < 10; i++) {
+  const b = document.createElement("button");
+  b.textContent = "P" + i;
+  if (i === 0) b.classList.add("sel");
+  b.onclick = () => { mySeat = i; document.querySelectorAll("#seats button").forEach(x => x.classList.remove("sel")); b.classList.add("sel"); };
+  $("#seats").appendChild(b);
+}
+$("#assist-switch").onclick = function () { assist = !assist; this.classList.toggle("on", assist); renderPool(); };
+function startGame(heroIds) {
+  newGame(mySeat, heroIds);
+  $("#start").classList.add("hidden"); $("#picker").classList.add("hidden");
+  $("#game").classList.remove("hidden");
+  $("#btn-restart").classList.remove("hidden");
+  runTurns();
+}
+$("#btn-restart").onclick = () => { if (confirm("重新开始？当前草稿将丢弃")) location.reload(); };
+$("#btn-start").onclick = () => startGame(null);
+
+// ---------- 手动选池 ----------
+const ATTRS = [["str", "力量", "#e06c6c"], ["agi", "敏捷", "#5fd38a"], ["int", "智力", "#5aa9e6"], ["all", "全才", "#e8b64a"]];
+const picked = new Set();
+let pickerBuilt = false;
+function refreshPickUI() {
+  $("#pick-count").textContent = `已选 ${picked.size}/12`;
+  const go = $("#btn-go");
+  go.disabled = picked.size !== 12;
+  go.textContent = picked.size === 12 ? "开始草稿" : `选满 12 个开始（还差 ${12 - picked.size}）`;
+}
+const hpButtons = new Map();  // heroId -> 选池按钮（识别结果编程勾选用）
+function buildPicker() {
+  if (pickerBuilt) return;
+  pickerBuilt = true;
+  const wrap = $("#hero-groups");
+  for (const [key, label, color] of ATTRS) {
+    const hs = B.heroes.filter(h => h.attr === key)
+      .sort((a, b) => byId.get(a.body).n.localeCompare(byId.get(b.body).n));
+    if (!hs.length) continue;
+    const head = document.createElement("div");
+    head.className = "attr-h";
+    head.style.setProperty("--c", color);
+    head.textContent = `${label}（${hs.length}）`;
+    wrap.appendChild(head);
+    const grid = document.createElement("div");
+    grid.className = "hgrid";
+    for (const h of hs) {
+      const body = byId.get(h.body);
+      const b = document.createElement("button");
+      b.className = "hp";
+      hpButtons.set(h.id, b);
+      b.innerHTML = `<img loading="lazy" src="${icon(body)}" title="${body.n}" alt="${body.n}">`;
+      b.onclick = () => {
+        if (picked.has(h.id)) picked.delete(h.id);
+        else if (picked.size < 12) picked.add(h.id);
+        b.classList.toggle("sel", picked.has(h.id));
+        refreshPickUI();
+      };
+      grid.appendChild(b);
+    }
+    wrap.appendChild(grid);
+  }
+}
+$("#btn-manual").onclick = () => { buildPicker(); refreshPickUI(); $("#start").classList.add("hidden"); $("#picker").classList.remove("hidden"); };
+$("#btn-back").onclick = () => { $("#picker").classList.add("hidden"); $("#start").classList.remove("hidden"); };
+$("#btn-clear").onclick = () => { picked.clear(); document.querySelectorAll(".hp.sel").forEach(x => x.classList.remove("sel")); refreshPickUI(); };
+$("#btn-go").onclick = () => { if (picked.size === 12) startGame(new Set(picked)); };
+
+function me() { return G.players[G.mySeat]; }
+function renderBuild() {
+  const p = me(); const el = $("#mybuild"); el.innerHTML = "";
+  const mk = (id, cls, tag) => {
+    const d = document.createElement("div"); d.className = "slot " + cls;
+    if (id !== null) { const e = byId.get(id); d.innerHTML = `<img src="${icon(e)}" alt="">`; }
+    d.innerHTML += `<div class="tag">${tag}</div>`; el.appendChild(d);
+  };
+  mk(p.body, "body-slot", "身板");
+  const ult = p.abs.find(id => byId.get(id).u) ?? null;
+  const norms = p.abs.filter(id => !byId.get(id).u);
+  for (let i = 0; i < 3; i++) mk(norms[i] ?? null, "", "普通");
+  mk(ult, "ult-slot", "大招");
+}
+function renderPool() {
+  if (!G) return;
+  const p = me(); const el = $("#pool"); el.innerHTML = "";
+  const takenBy = new Map();
+  for (const pl of G.players) {
+    if (pl.body !== null) takenBy.set(pl.body, "P" + pl.i);
+    for (const id of pl.abs) takenBy.set(id, "P" + pl.i);
+  }
+  const rowIds = h => [h.body, ...h.ult, ...h.norm];
+  const groups = G.heroes.map(h => ({
+    h,
+    remainMax: Math.max(-1, ...rowIds(h).filter(id => G.pool.has(id)).map(id => byId.get(id).wr)),
+  })).sort((a, b) => b.remainMax - a.remainMax);
+
+  for (const { h, remainMax } of groups) {
+    if (remainMax < 0) continue; // 整行五格全被拿光才隐藏
+    const g = document.createElement("div");
+    g.className = "hgroup";
+    for (const id of rowIds(h)) {
+      const e = byId.get(id);
+      const typeCls = e.id < 0 ? " body-c" : e.u ? " ult-c" : "";
+      const cell = document.createElement("div");
+      if (!G.pool.has(id)) {
+        cell.className = "cell taken" + typeCls;
+        cell.innerHTML = `<img class="main" loading="lazy" src="${icon(e)}" title="${e.n}">
+          <div class="ctaken">${takenBy.get(id) || "已选"} ✓</div>`;
+      } else {
+        const legal = isLegal(p, id);
+        cell.className = "cell" + typeCls + (legal ? "" : " illegal");
+        let assistHtml = "";
+        if (assist) {
+          const mine = pickIds(p).length ? bestPairWith(id, pickIds(p)) : null;
+          const src = mine || bestPairInPool(id);
+          const pairHtml = src
+            ? `${mine ? "★" : "○"}<img loading="lazy" src="${icon(byId.get(src.otherId))}" title="${byId.get(src.otherId).n}">${pct(src.pr.wr)}`
+            : "—";
+          assistHtml = `<div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}</div>
+            <div class="cpair${mine ? " star" : ""}${src && src.pr.np < LOW_N ? " low-n" : ""}">${pairHtml}</div>`;
+        }
+        cell.innerHTML = `<img class="main" loading="lazy" src="${icon(e)}" title="${e.n}">${assistHtml}`;
+        cell.onclick = () => openSheet(e, legal);
+      }
+      g.appendChild(cell);
+    }
+    el.appendChild(g);
+  }
+}
+function openSheet(e, legal) {
+  if (!isMyTurn()) return;
+  const p = me();
+  const mine = pickIds(p).length ? bestPairWith(e.id, pickIds(p)) : null;
+  const inPool = bestPairInPool(e.id);
+  const line = x => x ? `${pct(x.pr.wr)} 配 ${byId.get(x.otherId).n}（${x.pr.np} 场）` : "无数据";
+  $("#sheet").innerHTML = `
+    <div class="head"><img src="${icon(e)}"><div>
+      <div style="font-weight:700;font-size:17px">${e.n}</div>
+      <div style="font-size:12px;color:var(--dim)">${e.id < 0 ? "英雄身板" : e.u ? "大招" : "普通技能"}</div>
+    </div></div>
+    <div class="stats">
+      <div>自身胜率 <b class="${wrClass(e.wr)}">${pct(e.wr)}</b>（${e.np} 场）${e.hs ? ` · 高分段 <b class="${wrClass(e.hs)}">${pct(e.hs)}</b>` : ""}</div>
+      <div>★ 与我已选最佳配对：${line(mine)}</div>
+      <div>○ 与池内条目最佳配对：${line(inPool)}</div>
+    </div>
+    <button id="btn-pick" ${legal ? "" : "disabled"}>${legal ? "选定 " + e.n : "当前不可选"}</button>`;
+  $("#sheet").classList.remove("hidden"); $("#sheet-mask").classList.remove("hidden");
+  $("#sheet-mask").onclick = closeSheet;
+  $("#btn-pick").onclick = () => { closeSheet(); humanPick(e.id); };
+}
+function closeSheet() { $("#sheet").classList.add("hidden"); $("#sheet-mask").classList.add("hidden"); }
+
+const isMyTurn = () => G.pickNo < 50 && G.order[G.pickNo] === G.mySeat;
+function humanPick(id) {
+  const p = me();
+  if (!isLegal(p, id)) return;
+  applyPick(p, id);
+  $("#feed").textContent = `你选了 ${byId.get(id).n}`;
+  runTurns();
+}
+function runTurns() {
+  renderBuild(); renderPool();
+  if (G.pickNo >= 50) return showResult();
+  if (isMyTurn()) {
+    $("#banner").textContent = `━ 第 ${G.pickNo + 1}/50 手 · 轮到你 ━`;
+    return;
+  }
+  $("#banner").textContent = `第 ${G.pickNo + 1}/50 手 · P${G.order[G.pickNo]} 思考中…`;
+  setTimeout(() => {
+    const p = G.players[G.order[G.pickNo]];
+    const id = aiPick(p);
+    applyPick(p, id);
+    $("#feed").textContent = `P${p.i} 选了 ${byId.get(id).n}`;
+    runTurns();
+  }, 220);
+}
+function showResult() {
+  $("#game").classList.add("hidden");
+  const el = $("#result"); el.classList.remove("hidden");
+  const row = p => {
+    const imgs = pickIds(p).map(id => `<img src="${icon(byId.get(id))}" title="${byId.get(id).n}">`).join("");
+    return `<div class="final-row${p.i === G.mySeat ? " me" : ""}"><span class="pname">P${p.i}</span>${imgs}</div>`;
+  };
+  el.innerHTML = `<h2>天辉</h2>${G.players.slice(0, 5).map(row).join("")}
+    <h2>夜魇</h2>${G.players.slice(5).map(row).join("")}
+    <button id="btn-again">再来一局</button>`;
+  $("#btn-again").onclick = () => { el.classList.add("hidden"); $("#start").classList.remove("hidden"); };
+}
+</script>
+</body>
+</html>

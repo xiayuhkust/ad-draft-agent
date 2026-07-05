@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AD 盒子</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161d29; --panel2:#1d2636; --line:#2a3548;
+  --text:#dce3ee; --dim:#8b98ac; --gold:#e8b64a; --green:#5fd38a; --red:#e06c6c; --blue:#5aa9e6;
+}
+*{box-sizing:border-box;margin:0;padding:0;user-select:none}
+body{background:var(--bg);color:var(--text);font:13px/1.45 system-ui,"Microsoft YaHei",sans-serif;overflow:hidden}
+#bar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel);
+  border-bottom:1px solid var(--line);cursor:move}
+#bar .title{font-weight:700;color:var(--gold);pointer-events:none}
+#bar .status{flex:1;font-size:11px;color:var(--dim);pointer-events:none}
+#bar button{background:var(--panel2);color:var(--text);border:1px solid var(--line);
+  border-radius:6px;padding:4px 9px;font:inherit;cursor:pointer}
+#bar #btn-cap{border-color:var(--gold);color:var(--gold)}
+#content{overflow-y:auto;height:calc(100vh - 41px);padding:6px}
+#empty{padding:30px 16px;text-align:center;color:var(--dim);font-size:12px;line-height:2}
+kbd{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--gold)}
+.note{font-size:11px;color:var(--dim);padding:2px 4px 6px}
+.hgroup{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:4px;border-radius:8px;
+  background:var(--panel);border:1px solid var(--line);margin-bottom:4px}
+.cell{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:3px 1px;
+  text-align:center;min-width:0}
+.cell.body-c{border-color:var(--gold)}
+.cell.ult-c{border-color:var(--blue)}
+.cell img.main{width:36px;height:36px;border-radius:5px;object-fit:cover}
+.cell .cwr{font-size:11px;font-weight:700;line-height:1.25}
+.cell .cpair{font-size:9px;color:var(--dim);display:flex;align-items:center;justify-content:center;gap:2px}
+.cell .cpair img{width:12px;height:12px;border-radius:2px;object-fit:cover}
+.wr-hi{color:var(--green)} .wr-lo{color:var(--red)} .wr-mid{color:var(--text)}
+</style>
+</head>
+<body>
+<div id="bar" class="pywebview-drag-region">
+  <span class="title">AD 盒子</span>
+  <span class="status" id="status">待命 · 游戏中按 Ctrl+Shift+O</span>
+  <button id="btn-cap">📷 识别</button>
+  <button id="btn-fold">▁</button>
+  <button id="btn-close">✕</button>
+</div>
+<div id="content">
+  <div id="empty">进入技能征召选人界面后<br>按 <kbd>Ctrl+Shift+O</kbd> 或点上方 📷<br><br>识别结果会显示每个英雄的<br>身板/技能胜率与最佳配对</div>
+  <div id="pool"></div>
+</div>
+
+<script src="data/bundle.js"></script>
+<script>
+const B = window.AD_BUNDLE;
+const byId = new Map(B.entries.map(e => [e.id, e]));
+const heroById = new Map(B.heroes.map(h => [h.id, h]));
+const pairMap = new Map();
+for (const [a, b, np, wr] of B.pairs) {
+  pairMap.set((a < b ? a : b) + "_" + (a < b ? b : a), { np, wr });
+}
+const pair = (a, b) => pairMap.get((a < b ? a : b) + "_" + (a < b ? b : a));
+const icon = e => e.id < 0 ? `img/heroes/${e.s}.png` : `img/abilities/${e.s}.png`;
+const pct = x => (x * 100).toFixed(1) + "%";
+const wrClass = x => x >= 0.52 ? "wr-hi" : x <= 0.48 ? "wr-lo" : "wr-mid";
+const $ = q => document.querySelector(q);
+
+function bestPairInPool(id, poolIds) {
+  let best = null;
+  for (const oid of poolIds) {
+    if (oid === id) continue;
+    const p = pair(id, oid);
+    if (p && p.np >= 200 && (!best || p.wr > best.p.wr)) best = { oid, p };
+  }
+  return best;
+}
+
+function render(result) {
+  const ids = result.heroIds.filter(id => heroById.has(id));
+  const heroes = ids.map(id => heroById.get(id));
+  const poolIds = new Set();
+  for (const h of heroes) {
+    poolIds.add(h.body);
+    h.ult.forEach(i => poolIds.add(i));
+    h.norm.forEach(i => poolIds.add(i));
+  }
+  const el = $("#pool");
+  el.innerHTML = `<div class="note">识别 ${heroes.length} 个候选英雄（强锁 ${result.lockedCount}）
+    · ${result.elapsedMs || "?"}ms${heroes.length < 12 ? " · 不足 12 请目视补充" : ""}</div>`;
+  for (const h of heroes) {
+    const g = document.createElement("div");
+    g.className = "hgroup";
+    for (const id of [h.body, ...h.ult, ...h.norm]) {
+      const e = byId.get(id);
+      const cell = document.createElement("div");
+      cell.className = "cell" + (e.id < 0 ? " body-c" : e.u ? " ult-c" : "");
+      const bp = bestPairInPool(id, poolIds);
+      const pairHtml = bp
+        ? `○<img src="${icon(byId.get(bp.oid))}" title="${byId.get(bp.oid).n}">${pct(bp.p.wr)}`
+        : "—";
+      cell.innerHTML = `<img class="main" loading="lazy" src="${icon(e)}" title="${e.n}">
+        <div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}</div>
+        <div class="cpair">${pairHtml}</div>`;
+      g.appendChild(cell);
+    }
+    el.appendChild(g);
+  }
+  $("#empty").style.display = "none";
+}
+
+// JS 异常直接显示在状态栏（悬浮窗没有 devtools，必须自曝）
+window.onerror = (msg, src, line) => {
+  $("#status").textContent = `页面错误: ${msg} @${line}`;
+  return false;
+};
+
+// 轮询识别状态；打开面板时已有结果则立即渲染（不吞历史）
+let lastSeq = null;
+setInterval(async () => {
+  try {
+    const s = await (await fetch("api/state")).json();
+    if (s.seq === lastSeq) return;
+    lastSeq = s.seq;
+    if (s.result && s.result.ok) {
+      $("#status").textContent = `识别于 ${s.at} · 锁定 ${s.result.lockedCount}/12`;
+      render(s.result);
+    } else if (s.result) {
+      $("#status").textContent = "未检测到选人界面";
+    }
+  } catch (e) { $("#status").textContent = "服务器未连接"; }
+}, 1200);
+
+// 与 pywebview 宿主交互
+$("#btn-cap").onclick = async () => {
+  $("#status").textContent = "识别中…";
+  if (window.pywebview) window.pywebview.api.capture();
+};
+let folded = false;
+$("#btn-fold").onclick = () => {
+  folded = !folded;
+  $("#content").style.display = folded ? "none" : "";
+  if (window.pywebview) window.pywebview.api.fold(folded);
+};
+$("#btn-close").onclick = () => { if (window.pywebview) window.pywebview.api.close(); };
+</script>
+</body>
+</html>
