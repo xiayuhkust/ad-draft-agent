@@ -191,10 +191,30 @@ const MIN_N = 200, LOW_N = 300;
 
 // ---------- 草稿引擎（与 Python 版同规则） ----------
 let G = null;
+const shuffled = a => [...a].sort(() => Math.random() - .5);
 function newGame(mySeat, heroIds) {
-  const heroes = heroIds
-    ? B.heroes.filter(h => heroIds.has(h.id))
-    : [...B.heroes].sort(() => Math.random() - .5).slice(0, 12);
+  let base;
+  if (heroIds) {
+    base = B.heroes.filter(h => heroIds.has(h.id));
+  } else {
+    // 官方规则：每局最多 1 个无大招英雄（Morph/卡尔/米波/蓝胖/拉比克/天穹）
+    do { base = shuffled(B.heroes).slice(0, 12); }
+    while (base.filter(h => !h.ult.length).length > 1);
+  }
+  // 自身可征召技能不足 1 大招 + 3 普通的英雄，从局外英雄技能随机补位（同官方）
+  const inGame = new Set(base.map(h => h.id));
+  const outUlts = [], outNorms = [];
+  for (const e of B.entries) {
+    if (e.id < 0 || !e.h || inGame.has(e.h)) continue;
+    (e.u ? outUlts : outNorms).push(e.id);
+  }
+  const bagU = shuffled(outUlts), bagN = shuffled(outNorms);
+  const heroes = base.map(h => {
+    const ult = [h.ult.length ? h.ult[Math.floor(Math.random() * h.ult.length)] : bagU.pop()];
+    const norm = shuffled(h.norm).slice(0, 3);
+    while (norm.length < 3) norm.push(bagN.pop());
+    return { ...h, ult, norm };
+  });
   const pool = new Set();
   for (const h of heroes) { pool.add(h.body); h.ult.forEach(i => pool.add(i)); h.norm.forEach(i => pool.add(i)); }
   const order = [];

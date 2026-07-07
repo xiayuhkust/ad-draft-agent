@@ -1,7 +1,7 @@
 """把快照瘦身导出为前端数据包 web/data/bundle.js。
 
-只保留进池条目 + 必要字段 + 双方都进池的配对，并预计算"可开局英雄"
-（有身板、≥1 大招、≥3 普通技能），让前端的池生成逻辑最简化。
+只保留进池条目 + 必要字段 + 双方都进池的配对，并按英雄归组全部
+可征召技能（ult/norm 变长，可为空——前端组池时从局外英雄补位）。
 
 导出为 window.AD_BUNDLE = {...} 的 JS 文件（而非 JSON），
 这样 index.html 双击用 file:// 打开也能加载，无需起服务器。
@@ -64,8 +64,8 @@ def main():
     for h, ss in skills_by_hero.items():
         ults = [s.id for s in ss if s.is_ultimate]
         normals = [s.id for s in ss if not s.is_ultimate]
-        if -h in drafted and len(ults) >= 1 and len(normals) >= 3:
-            heroes.append({"id": h, "body": -h, "ult": ults[:1], "norm": normals[:3],
+        if -h in drafted:
+            heroes.append({"id": h, "body": -h, "ult": ults, "norm": normals,
                            "attr": attrs.get(h, "all")})
 
     bundle = {

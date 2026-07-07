@@ -39,6 +39,19 @@ while (G.pickNo < 50) {
 const manualOk = G.players.every(p => p.body !== null && p.abs.length === 4 && ultCount(p) === 1);
 console.log("手动选池 12 英雄一局: " + (manualOk ? "通过" : "违规"));
 
+// 极端补位：12 个特殊英雄（无大招/普通技不足3），全靠局外补位也要能满额成局
+const specialIds = new Set([5, 10, 34, 40, 42, 49, 60, 74, 76, 82, 84, 113]);
+newGame(0, specialIds);
+if (G.heroes.length !== 12) { console.log("特殊英雄池英雄数错误: " + G.heroes.length); process.exit(1); }
+const ultsInPool = [...G.pool].filter(id => id > 0 && window.AD_BUNDLE.entries.find(e => e.id === id).u).length;
+if (ultsInPool !== 12) { console.log("特殊英雄池大招数错误: " + ultsInPool); process.exit(1); }
+while (G.pickNo < 50) {
+  const p = G.players[G.order[G.pickNo]];
+  applyPick(p, aiPick(p));
+}
+const specialOk = G.players.every(p => p.body !== null && p.abs.length === 4 && ultCount(p) === 1);
+console.log("12 特殊英雄补位一局: " + (specialOk ? "通过" : "违规"));
+
 newGame(0);
 let with2 = 0, total = 0;
 for (const id of G.pool) {

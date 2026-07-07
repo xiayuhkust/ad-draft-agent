@@ -65,26 +65,47 @@ class DraftState:
         seed: int | None = None,
         ult_rule: UltRule = UltRule.EXACTLY_ONE,
     ) -> "DraftState":
-        """随机 12 英雄开局：池 = 12 身板 + 它们的技能（需大招规则可满足）。"""
+        """随机 12 英雄开局：池 = 12 身板 + 每英雄 1 大招 + 3 普通。
+
+        对齐官方 AD：全部英雄可开局。自身可征召技能不足 3+1 的
+        （先天技改造英雄、大招不可征召的 Morph/Invoke/多重施法等），
+        缺口从局外英雄的技能里随机补位；卡尔即"10 个 AD 小招随机取 3"。
+        官方规则：每局最多 1 个无大招英雄。
+        """
         rng = random.Random(seed)
         skills_by_hero: dict[int, list[Ability]] = {}
         for a in snapshot.draftable():
             if not a.is_hero_body and a.owner_hero_id:
                 skills_by_hero.setdefault(a.owner_hero_id, []).append(a)
-        eligible = [
-            h for h, ss in skills_by_hero.items()
-            if -h in snapshot.abilities
-            and sum(1 for s in ss if s.is_ultimate) >= 1
-            and sum(1 for s in ss if not s.is_ultimate) >= 3
-        ]
-        game_heroes = rng.sample(eligible, POOL_HEROES)
+        eligible = [h for h in skills_by_hero if -h in snapshot.abilities]
+
+        while True:
+            game_heroes = rng.sample(eligible, POOL_HEROES)
+            no_ult = sum(
+                1 for h in game_heroes
+                if not any(s.is_ultimate for s in skills_by_hero[h])
+            )
+            if no_ult <= 1:
+                break
+
+        in_game = set(game_heroes)
+        out_ults = [s for h in eligible if h not in in_game
+                    for s in skills_by_hero[h] if s.is_ultimate]
+        out_norms = [s for h in eligible if h not in in_game
+                     for s in skills_by_hero[h] if not s.is_ultimate]
+        rng.shuffle(out_ults)
+        rng.shuffle(out_norms)
 
         pool: dict[int, Ability] = {}
         for h in game_heroes:
             pool[-h] = snapshot.abilities[-h]
             ults = [s for s in skills_by_hero[h] if s.is_ultimate]
             normals = [s for s in skills_by_hero[h] if not s.is_ultimate]
-            for s in ults[:1] + normals[:3]:  # 每英雄进池：1 大招 + 3 普通
+            chosen_ult = rng.choice(ults) if ults else out_ults.pop()
+            chosen_norms = rng.sample(normals, 3) if len(normals) > 3 else list(normals)
+            while len(chosen_norms) < 3:
+                chosen_norms.append(out_norms.pop())
+            for s in [chosen_ult] + chosen_norms:
                 pool[s.id] = s
 
         picks_per_player = 1 + ABILITIES_PER_PLAYER
