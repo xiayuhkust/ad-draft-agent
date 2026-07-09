@@ -1,7 +1,7 @@
 {
  "appVersion": "1.3.0",
- "dataVersion": "7.41d-2026-07-07",
- "publishedAt": "2026-07-08T07:56:26",
+ "dataVersion": "7.41d-2026-07-09",
+ "publishedAt": "2026-07-09T09:00:19",
  "dataPrefixes": [
   "web/"
  ],
@@ -18,7 +18,7 @@
   "plugin/overlay.py": "3abd5f24af107745",
   "web/index.html": "493d9a5c37e0f9f6",
   "web/overlay.html": "082fc94256898cef",
-  "web/data/bundle.js": "7be78c33b9793fec",
+  "web/data/bundle.js": "83162360acf226ff",
   "web/img/abilities/abaddon_aphotic_shield.png": "e18d5cce26b0b078",
   "web/img/abilities/abaddon_borrowed_time.png": "190094cc07bf8be3",
   "web/img/abilities/abaddon_death_coil.png": "390527527f4375f6",
