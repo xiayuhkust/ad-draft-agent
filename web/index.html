@@ -238,22 +238,28 @@ function isLegal(p, id) {
   return true;
 }
 function applyPick(p, id) { G.pool.delete(id); const e = byId.get(id); e.id < 0 ? p.body = id : p.abs.push(id); G.pickNo++; }
-function bestPairWith(candId, ids, minN = MIN_N) {
-  let best = null;
+function topPairsWith(candId, ids, k = 3, minN = MIN_N) {
+  const out = [];
   for (const pid of ids) {
     const pr = pair(candId, pid);
-    if (pr && pr.np >= minN && (!best || pr.wr > best.pr.wr)) best = { otherId: pid, pr };
+    if (pr && pr.np >= minN) out.push({ otherId: pid, pr });
   }
-  return best;
+  return out.sort((a, b) => b.pr.wr - a.pr.wr).slice(0, k);
 }
-function bestPairInPool(candId) {
-  let best = null;
+function bestPairWith(candId, ids, minN = MIN_N) {
+  return topPairsWith(candId, ids, 1, minN)[0] || null;
+}
+function topPairsInPool(candId, k = 3) {
+  const out = [];
   for (const oid of (pairsOf.get(candId) || [])) {
     if (!G.pool.has(oid) || oid === candId) continue;
     const pr = pair(candId, oid);
-    if (pr.np >= MIN_N && (!best || pr.wr > best.pr.wr)) best = { otherId: oid, pr };
+    if (pr.np >= MIN_N) out.push({ otherId: oid, pr });
   }
-  return best;
+  return out.sort((a, b) => b.pr.wr - a.pr.wr).slice(0, k);
+}
+function bestPairInPool(candId) {
+  return topPairsInPool(candId, 1)[0] || null;
 }
 function aiPick(p) {
   let bestId = null, bestScore = -9;
@@ -411,13 +417,14 @@ function renderPool() {
         cell.className = "cell" + typeCls + (legal ? "" : " illegal");
         let assistHtml = "";
         if (assist) {
-          const mine = pickIds(p).length ? bestPairWith(id, pickIds(p)) : null;
-          const src = mine || bestPairInPool(id);
-          const pairHtml = src
-            ? `${mine ? "★" : "○"}<img loading="lazy" src="${icon(byId.get(src.otherId))}" title="${byId.get(src.otherId).n}">${pct(src.pr.wr)}`
-            : "—";
-          assistHtml = `<div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}</div>
-            <div class="cpair${mine ? " star" : ""}${src && src.pr.np < LOW_N ? " low-n" : ""}">${pairHtml}</div>`;
+          // 最多 3 条配对，从上到下：先与我已选的（★），不足再用池内最佳（○）补齐
+          const mine = pickIds(p).length ? topPairsWith(id, pickIds(p), 3) : [];
+          const rows = mine.map(x => ({ ...x, star: true }))
+            .concat(topPairsInPool(id, 3 - mine.length).map(x => ({ ...x, star: false })));
+          const lines = rows.length ? rows.map(x =>
+            `<div class="cpair${x.star ? " star" : ""}${x.pr.np < LOW_N ? " low-n" : ""}">${x.star ? "★" : "○"}<img loading="lazy" src="${icon(byId.get(x.otherId))}" title="${byId.get(x.otherId).n}">${pct(x.pr.wr)}</div>`
+          ).join("") : `<div class="cpair">—</div>`;
+          assistHtml = `<div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}</div>${lines}`;
         }
         cell.innerHTML = `<img class="main" loading="lazy" src="${icon(e)}" title="${e.n}">${assistHtml}`;
         cell.onclick = () => openSheet(e, legal);

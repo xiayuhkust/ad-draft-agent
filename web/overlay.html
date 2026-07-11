@@ -62,14 +62,14 @@ const pct = x => (x * 100).toFixed(1) + "%";
 const wrClass = x => x >= 0.52 ? "wr-hi" : x <= 0.48 ? "wr-lo" : "wr-mid";
 const $ = q => document.querySelector(q);
 
-function bestPairInPool(id, poolIds) {
-  let best = null;
+function topPairsInPool(id, poolIds, k = 3) {
+  const out = [];
   for (const oid of poolIds) {
     if (oid === id) continue;
     const p = pair(id, oid);
-    if (p && p.np >= 200 && (!best || p.wr > best.p.wr)) best = { oid, p };
+    if (p && p.np >= 200) out.push({ oid, p });
   }
-  return best;
+  return out.sort((a, b) => b.p.wr - a.p.wr).slice(0, k);
 }
 
 function render(result) {
@@ -91,13 +91,13 @@ function render(result) {
       const e = byId.get(id);
       const cell = document.createElement("div");
       cell.className = "cell" + (e.id < 0 ? " body-c" : e.u ? " ult-c" : "");
-      const bp = bestPairInPool(id, poolIds);
-      const pairHtml = bp
-        ? `○<img src="${icon(byId.get(bp.oid))}" title="${byId.get(bp.oid).n}">${pct(bp.p.wr)}`
-        : "—";
+      // 最多 3 条池内最佳配对，从上到下按胜率排
+      const tops = topPairsInPool(id, poolIds);
+      const pairHtml = tops.length ? tops.map(bp =>
+        `<div class="cpair">○<img src="${icon(byId.get(bp.oid))}" title="${byId.get(bp.oid).n}">${pct(bp.p.wr)}</div>`
+      ).join("") : `<div class="cpair">—</div>`;
       cell.innerHTML = `<img class="main" loading="lazy" src="${icon(e)}" title="${e.n}">
-        <div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}</div>
-        <div class="cpair">${pairHtml}</div>`;
+        <div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}</div>${pairHtml}`;
       g.appendChild(cell);
     }
     el.appendChild(g);
