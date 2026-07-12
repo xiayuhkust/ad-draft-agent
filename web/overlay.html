@@ -32,6 +32,8 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padd
 .cell .cpair{font-size:9px;color:var(--dim);display:flex;align-items:center;justify-content:center;gap:2px}
 .cell .cpair img{width:12px;height:12px;border-radius:2px;object-fit:cover}
 .wr-hi{color:var(--green)} .wr-lo{color:var(--red)} .wr-mid{color:var(--text)}
+/* 折叠态：窗口缩成小徽标，只留 ▼ 展开按钮（新版宿主生效，老版 exe 回退原布局） */
+body.folded .title,body.folded .status,body.folded #btn-cap,body.folded #btn-close{display:none}
 </style>
 </head>
 <body>
@@ -138,7 +140,12 @@ function setFold(f) {
   folded = f;
   $("#content").style.display = folded ? "none" : "";
   $("#btn-fold").textContent = folded ? "▼" : "▁";
-  if (window.pywebview) window.pywebview.api.fold(folded);
+  if (!window.pywebview) return;
+  // 新版宿主 fold 接受尺寸参数（折叠缩成 56x42 小徽标）；
+  // 老版 exe 只认 fold(folded)，reject 后回退且不套折叠样式（保持整条栏可用）
+  window.pywebview.api.fold(folded, folded ? 56 : 480, folded ? 42 : 820)
+    .then(() => document.body.classList.toggle("folded", folded))
+    .catch(() => { document.body.classList.remove("folded"); window.pywebview.api.fold(folded); });
 }
 $("#btn-fold").onclick = () => setFold(!folded);
 $("#btn-close").onclick = () => { if (window.pywebview) window.pywebview.api.close(); };

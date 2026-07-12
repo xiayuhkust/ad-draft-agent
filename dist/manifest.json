@@ -1,12 +1,12 @@
 {
- "appVersion": "1.3.1",
+ "appVersion": "1.3.2",
  "dataVersion": "7.41d-2026-07-12",
- "publishedAt": "2026-07-12T09:00:19",
+ "publishedAt": "2026-07-12T21:03:13",
  "dataPrefixes": [
   "web/"
  ],
  "files": {
-  "VERSION": "10e2e117b0152389",
+  "VERSION": "33158972a53877b4",
   "server.py": "1d5ade559aeccc80",
   "addraft/__init__.py": "7a6d9e0b3c5deba1",
   "addraft/snapshot.py": "644596fccb2cb2ba",
@@ -15,9 +15,9 @@
   "addraft/vision.py": "b99d9222af5719fe",
   "addraft/updater.py": "c104f2da63b12e2f",
   "plugin/hotkey_capture.py": "d10e118c3964c7fa",
-  "plugin/overlay.py": "3abd5f24af107745",
+  "plugin/overlay.py": "71d20da993a06d63",
   "web/index.html": "cdc512bf4076acf7",
-  "web/overlay.html": "4a96240bb82fabd0",
+  "web/overlay.html": "5ecdd68c9f2c9ee9",
   "web/data/bundle.js": "b4a29bef9b40eaf9",
   "web/img/abilities/abaddon_aphotic_shield.png": "e18d5cce26b0b078",
   "web/img/abilities/abaddon_borrowed_time.png": "190094cc07bf8be3",

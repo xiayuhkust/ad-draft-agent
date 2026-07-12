@@ -40,7 +40,7 @@ CONFIG_PATH = EXE_DIR / "config.json"
 
 WM_HOTKEY = 0x0312
 MODS = {"ctrl": 0x0002, "shift": 0x0004, "alt": 0x0001, "win": 0x0008}
-FULL_H, FOLD_H = 820, 42
+FULL_W, FULL_H, FOLD_W, FOLD_H = 480, 820, 56, 42
 window = None
 
 
@@ -100,9 +100,11 @@ class Api:
     def capture(self):
         threading.Thread(target=do_capture, daemon=True).start()
 
-    def fold(self, folded):
+    def fold(self, folded, w=None, h=None):
+        # 尺寸由页面传入（随 web 热更可调）；老页面不传参则用内置默认
         if window:
-            window.resize(480, FOLD_H if folded else FULL_H)
+            window.resize(w or (FOLD_W if folded else FULL_W),
+                          h or (FOLD_H if folded else FULL_H))
 
     def close(self):
         if window:
@@ -143,7 +145,7 @@ def main():
     screen_w = ctypes.windll.user32.GetSystemMetrics(0)
     window = webview.create_window(
         "AD 盒子", f"{BASE}/overlay.html",
-        width=480, height=FULL_H,
+        width=FULL_W, height=FULL_H,
         x=screen_w - 500, y=60,
         frameless=True, on_top=True, easy_drag=False,
         js_api=Api(),
