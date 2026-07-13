@@ -46,6 +46,7 @@ def main():
             "h": a.owner_hero_id,
             "wr": round(a.stats.winrate, 4),
             "np": a.stats.num_picks,
+            "ap": round(a.stats.avg_pick_position, 1) if a.stats.avg_pick_position else None,
             "hs": round(a.high_skill_stats.winrate, 4) if a.high_skill_stats else None,
         })
 

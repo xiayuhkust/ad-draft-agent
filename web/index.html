@@ -85,6 +85,7 @@ button{font:inherit;border:0;cursor:pointer;border-radius:var(--radius)}
 .cell.taken{opacity:.3}
 .cell img.main{width:42px;height:42px;border-radius:7px;object-fit:cover}
 .cell .cwr{font-size:12px;font-weight:700;line-height:1.3}
+.cell .cpk{font-size:10px;font-weight:400;color:var(--dim);margin-left:3px}
 .cell .cpair{font-size:10px;color:var(--dim);display:flex;align-items:center;justify-content:center;gap:2px;line-height:1.4}
 .cell .cpair.star{color:var(--gold)}
 .cell .cpair.low-n{opacity:.55}
@@ -187,6 +188,12 @@ const pair = (a, b) => pairMap.get(a < b ? a + "_" + b : b + "_" + a);
 const icon = e => e.id < 0 ? `img/heroes/${e.s}.png` : `img/abilities/${e.s}.png`;
 const pct = x => (x * 100).toFixed(1) + "%";
 const wrClass = x => x >= 0.52 ? "wr-hi" : x <= 0.48 ? "wr-lo" : "wr-mid";
+// 平均被抢手数(1-50) → "轮-抢"：四舍五入后按 10 手一轮折算，如 3.4→1-3、10.5→2-1
+const pickTag = ap => {
+  if (ap == null) return "";
+  const t = Math.round(ap), r = Math.ceil(t / 10);
+  return `${r}-${t - (r - 1) * 10}`;
+};
 const MIN_N = 200, LOW_N = 300;
 
 // ---------- 草稿引擎（与 Python 版同规则） ----------
@@ -424,7 +431,7 @@ function renderPool() {
           const lines = rows.length ? rows.map(x =>
             `<div class="cpair${x.star ? " star" : ""}${x.pr.np < LOW_N ? " low-n" : ""}">${x.star ? "★" : "○"}<img loading="lazy" src="${icon(byId.get(x.otherId))}" title="${byId.get(x.otherId).n}">${pct(x.pr.wr)}</div>`
           ).join("") : `<div class="cpair">—</div>`;
-          assistHtml = `<div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}</div>${lines}`;
+          assistHtml = `<div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}${e.ap ? `<span class="cpk">${pickTag(e.ap)}</span>` : ""}</div>${lines}`;
         }
         cell.innerHTML = `<img class="main" loading="lazy" src="${icon(e)}" title="${e.n}">${assistHtml}`;
         cell.onclick = () => openSheet(e, legal);
@@ -446,7 +453,7 @@ function openSheet(e, legal) {
       <div style="font-size:12px;color:var(--dim)">${e.id < 0 ? "英雄身板" : e.u ? "大招" : "普通技能"}</div>
     </div></div>
     <div class="stats">
-      <div>自身胜率 <b class="${wrClass(e.wr)}">${pct(e.wr)}</b>（${e.np} 场）${e.hs ? ` · 高分段 <b class="${wrClass(e.hs)}">${pct(e.hs)}</b>` : ""}</div>
+      <div>自身胜率 <b class="${wrClass(e.wr)}">${pct(e.wr)}</b>（${e.np} 场）${e.hs ? ` · 高分段 <b class="${wrClass(e.hs)}">${pct(e.hs)}</b>` : ""}${e.ap ? ` · 平均被抢 ${pickTag(e.ap)}（第 ${e.ap} 手）` : ""}</div>
       <div>★ 与我已选最佳配对：${line(mine)}</div>
       <div>○ 与池内条目最佳配对：${line(inPool)}</div>
     </div>
