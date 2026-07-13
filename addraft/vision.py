@@ -8,6 +8,7 @@ ULT_LOCK（top-1 ≥ 0.75 锁席）。全程无分辨率假设，实验 #1-#10 �
 
 from __future__ import annotations
 
+import hashlib
 from itertools import combinations
 from pathlib import Path
 
@@ -105,41 +106,65 @@ class Recognizer:
     """常驻内存的识别器：模板一次加载，多次请求复用。"""
 
     def __init__(self, snapshot: Snapshot | None = None, img_dir: Path | None = None):
-        from .paths import ROOT
+        from .paths import EXE_DIR, ROOT
         self.snap = snapshot or Snapshot.load()
         img_dir = img_dir or ROOT / "web" / "img"
-        self.t_ult, self.t_hero = [], []
+        tpls = self._load_templates(img_dir, EXE_DIR / "tpl_cache.npz")
+        self.t_ult = tpls["ult"]
+        # 全技能模板（大招格二次分类用：大招未收录的英雄，其格子里放的是小招）
+        self.t_std = tpls["std"]
+        self.t_hero = []
+        for a, tpl in tpls["hero"]:
+            h, w = tpl.shape[:2]  # 横版头像居中裁方
+            s = min(h, w)
+            self.t_hero.append((a, tpl[(h - s) // 2:(h + s) // 2, (w - s) // 2:(w + s) // 2]))
+
+    def _load_templates(self, img_dir: Path, cache_path: Path) -> dict:
+        """全部所需图标一次解码，结果缓存为单个 npz 供下次启动整块读入。
+
+        636 个小 PNG 逐个读盘+解码在慢机器（机械盘/杀软实时扫描）上要几十秒，
+        单文件顺序读快一个数量级。任一图标的名字/大小/mtime 变化即整体重建。
+        """
+        needed = []
         for a in self.snap.draftable():
             if a.is_hero_body:
-                p = img_dir / "heroes" / f"{a.short_name}.png"
-            elif a.is_ultimate:
-                p = img_dir / "abilities" / f"{a.short_name}.png"
+                kind, p = "hero", img_dir / "heroes" / f"{a.short_name}.png"
             else:
-                continue
-            if not p.exists():
-                continue
+                kind = "ult" if a.is_ultimate else "std"
+                p = img_dir / "abilities" / f"{a.short_name}.png"
+            if p.exists():
+                needed.append((kind, a, p))
+        key = hashlib.sha256("|".join(
+            f"{k}:{p.name}:{p.stat().st_size}:{p.stat().st_mtime_ns}"
+            for k, _, p in needed).encode()).hexdigest()
+
+        try:
+            z = np.load(cache_path, allow_pickle=False)
+            if str(z["__key__"]) == key:
+                out = {"ult": [], "hero": [], "std": []}
+                for kind, a, _ in needed:
+                    out[kind].append((a, z[f"{kind[0]}_{a.short_name}"]))
+                return out
+        except Exception:
+            pass  # 无缓存/损坏/图标已变 → 走慢路径重建
+
+        out = {"ult": [], "hero": [], "std": []}
+        save = {"__key__": np.array(key)}
+        for kind, a, p in needed:
             # 不用 cv2.imread：它不支持含中文的路径
             tpl = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
             if tpl is None:
                 continue
-            if a.is_hero_body:
-                h, w = tpl.shape[:2]  # 横版头像居中裁方
-                s = min(h, w)
-                tpl = tpl[(h - s) // 2:(h + s) // 2, (w - s) // 2:(w + s) // 2]
-                self.t_hero.append((a, tpl))
-            else:
-                self.t_ult.append((a, tpl))
-        # 全技能模板（大招格二次分类用：大招未收录的英雄，其格子里放的是小招）
-        self.t_std = []
-        for a in self.snap.draftable():
-            if a.is_hero_body or a.is_ultimate:
-                continue
-            p = img_dir / "abilities" / f"{a.short_name}.png"
-            if not p.exists():
-                continue
-            tpl = cv2.imdecode(np.fromfile(str(p), dtype=np.uint8), cv2.IMREAD_COLOR)
-            if tpl is not None:
-                self.t_std.append((a, tpl))
+            save[f"{kind[0]}_{a.short_name}"] = tpl
+            out[kind].append((a, tpl))
+        try:
+            tmp = cache_path.parent / (cache_path.name + ".new")
+            with open(tmp, "wb") as f:
+                np.savez(f, **save)
+            tmp.replace(cache_path)
+        except Exception:
+            pass  # 缓存写不进（只读目录等）不影响运行
+        return out
 
     def _classify_cell(self, warped, cx, cy, icon, templates=None):
         m = int(icon * 0.5)

@@ -1,18 +1,18 @@
 {
- "appVersion": "1.3.4",
+ "appVersion": "1.3.5",
  "dataVersion": "7.41d-2026-07-12",
- "publishedAt": "2026-07-13T08:24:33",
+ "publishedAt": "2026-07-13T08:31:07",
  "dataPrefixes": [
   "web/"
  ],
  "files": {
-  "VERSION": "e0a72941ba72e471",
+  "VERSION": "fc253dae4f432925",
   "server.py": "1d5ade559aeccc80",
   "addraft/__init__.py": "7a6d9e0b3c5deba1",
   "addraft/snapshot.py": "644596fccb2cb2ba",
   "addraft/draft.py": "0a94440b915223d3",
   "addraft/strategy.py": "421e5f67f527689f",
-  "addraft/vision.py": "b99d9222af5719fe",
+  "addraft/vision.py": "efa6a183d0fef619",
   "addraft/updater.py": "c104f2da63b12e2f",
   "plugin/hotkey_capture.py": "d10e118c3964c7fa",
   "plugin/overlay.py": "5a832b75cba20083",
