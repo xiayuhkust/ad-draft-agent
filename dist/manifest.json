@@ -1,12 +1,12 @@
 {
- "appVersion": "1.3.3",
+ "appVersion": "1.3.4",
  "dataVersion": "7.41d-2026-07-12",
- "publishedAt": "2026-07-13T08:20:32",
+ "publishedAt": "2026-07-13T08:24:33",
  "dataPrefixes": [
   "web/"
  ],
  "files": {
-  "VERSION": "a74a0cf84ef0b15e",
+  "VERSION": "e0a72941ba72e471",
   "server.py": "1d5ade559aeccc80",
   "addraft/__init__.py": "7a6d9e0b3c5deba1",
   "addraft/snapshot.py": "644596fccb2cb2ba",
@@ -15,7 +15,7 @@
   "addraft/vision.py": "b99d9222af5719fe",
   "addraft/updater.py": "c104f2da63b12e2f",
   "plugin/hotkey_capture.py": "d10e118c3964c7fa",
-  "plugin/overlay.py": "71d20da993a06d63",
+  "plugin/overlay.py": "5a832b75cba20083",
   "web/index.html": "2d5e1bf91c5e5769",
   "web/overlay.html": "06e79b6ad28ec105",
   "web/data/bundle.js": "2ef7cf09218bba8b",

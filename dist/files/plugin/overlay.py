@@ -137,20 +137,46 @@ def hotkey_loop():
             do_capture()
 
 
+# 启动过渡页：窗口先见人，加载进度/失败原因都在页内显示（慢机器上不再"没反应"）
+BOOT_HTML = """<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><style>
+body{background:#0d1117;color:#dce3ee;font:13px/1.6 system-ui,"Microsoft YaHei",sans-serif;
+  margin:0;user-select:none;overflow:hidden}
+#bar{display:flex;align-items:center;padding:8px 10px;background:#161d29;
+  border-bottom:1px solid #2a3548;cursor:move}
+#bar b{color:#e8b64a;flex:1}
+#bar button{background:#1d2636;color:#dce3ee;border:1px solid #2a3548;border-radius:6px;
+  padding:4px 9px;font:inherit;cursor:pointer}
+#msg{padding:28px 18px;text-align:center;color:#8b98ac;line-height:2}
+</style></head><body>
+<div id="bar" class="pywebview-drag-region"><b>AD 盒子</b><button onclick="pywebview.api.close()">✕</button></div>
+<div id="msg">正在加载识别引擎…<br>首次启动或更新后会慢一些，请稍候</div>
+</body></html>"""
+
+
+def boot():
+    """GUI 起来后再做耗时初始化；任何失败都写回过渡页，窗口始终可见可关。"""
+    threading.Thread(target=topmost_keeper, daemon=True).start()
+    try:
+        ensure_server()
+    except Exception as e:
+        msg = json.dumps(f"启动失败：{e}。请检查网络/端口占用后关闭重试")
+        window.evaluate_js(f'document.getElementById("msg").textContent = {msg}')
+        return
+    threading.Thread(target=hotkey_loop, daemon=True).start()
+    window.load_url(f"{BASE}/overlay.html")
+
+
 def main():
     global window
-    ensure_server()
-    threading.Thread(target=hotkey_loop, daemon=True).start()
-    threading.Thread(target=topmost_keeper, daemon=True).start()
     screen_w = ctypes.windll.user32.GetSystemMetrics(0)
     window = webview.create_window(
-        "AD 盒子", f"{BASE}/overlay.html",
+        "AD 盒子", html=BOOT_HTML,
         width=FULL_W, height=FULL_H,
         x=screen_w - 500, y=60,
         frameless=True, on_top=True, easy_drag=False,
         js_api=Api(),
     )
-    webview.start()
+    webview.start(boot)
 
 
 if __name__ == "__main__":
