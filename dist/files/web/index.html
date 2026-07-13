@@ -173,11 +173,13 @@ const pair = (a, b) => pairMap.get(a < b ? a + "_" + b : b + "_" + a);
 const icon = e => e.id < 0 ? `img/heroes/${e.s}.png` : `img/abilities/${e.s}.png`;
 const pct = x => (x * 100).toFixed(1) + "%";
 const wrClass = x => x >= 0.52 ? "wr-hi" : x <= 0.48 ? "wr-lo" : "wr-mid";
-// 平均被抢手数(1-50) → "轮-抢"：向上取整后按 10 手一轮折算，如 3.4→1-4、10.5→2-1
-const pickTag = ap => {
-  if (ap == null) return "";
-  const t = Math.ceil(ap), r = Math.ceil(t / 10);
-  return `${r}-${t - (r - 1) * 10}`;
+// 池内顺位 → "轮-抢"：本局条目按平均被抢手数排出第 N 顺位，
+// 10 手一轮折算显示，第 1 名 = 1-1，第 13 名 = 2-3
+const rankTag = id => {
+  const n = G && G.rank && G.rank.get(id);
+  if (!n) return "";
+  const r = Math.ceil(n / 10);
+  return `${r}-${n - (r - 1) * 10}`;
 };
 const MIN_N = 200, LOW_N = 300;
 
@@ -214,7 +216,10 @@ function newGame(mySeat, heroIds) {
     const f = [...Array(10).keys()];
     order.push(...(r % 2 ? f.reverse() : f));
   }
-  G = { pool, order, pickNo: 0, mySeat, heroes,
+  // 池内顺位：本局全部条目按平均被抢手数排 1..N（开局定死，不随选取变化）
+  const rank = new Map([...pool].map(id => byId.get(id)).filter(e => e.ap != null)
+    .sort((a, b) => a.ap - b.ap).map((e, i) => [e.id, i + 1]));
+  G = { pool, order, pickNo: 0, mySeat, heroes, rank,
         players: [...Array(10)].map((_, i) => ({ i, body: null, abs: [] })) };
 }
 const ultCount = p => p.abs.filter(id => byId.get(id).u).length;
@@ -396,10 +401,12 @@ function renderPool() {
           const mine = pickIds(p).length ? topPairsWith(id, pickIds(p), 3) : [];
           const rows = mine.map(x => ({ ...x, star: true }))
             .concat(topPairsInPool(id, 3 - mine.length).map(x => ({ ...x, star: false })));
-          const lines = rows.length ? rows.map(x =>
-            `<div class="cpair${x.star ? " star" : ""}${x.pr.np < LOW_N ? " low-n" : ""}">${x.star ? "★" : "○"}<img loading="lazy" src="${icon(byId.get(x.otherId))}" title="${byId.get(x.otherId).n}">${pct(x.pr.wr)}</div>`
-          ).join("") : `<div class="cpair">—</div>`;
-          assistHtml = `<div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}${e.ap ? `<span class="cpk">${pickTag(e.ap)}</span>` : ""}</div>${lines}`;
+          const lines = rows.length ? rows.map(x => {
+            const rt = rankTag(x.otherId);
+            return `<div class="cpair${x.star ? " star" : ""}${x.pr.np < LOW_N ? " low-n" : ""}">${x.star ? "★" : "○"}<img loading="lazy" src="${icon(byId.get(x.otherId))}" title="${byId.get(x.otherId).n}">${pct(x.pr.wr)}${rt ? `<span class="cpk">${rt}</span>` : ""}</div>`;
+          }).join("") : `<div class="cpair">—</div>`;
+          const myRt = rankTag(id);
+          assistHtml = `<div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}${myRt ? `<span class="cpk">${myRt}</span>` : ""}</div>${lines}`;
         }
         cell.innerHTML = `<img class="main" loading="lazy" src="${icon(e)}" title="${e.n}">${assistHtml}`;
         cell.onclick = () => openSheet(e, legal);
@@ -421,7 +428,7 @@ function openSheet(e, legal) {
       <div style="font-size:12px;color:var(--dim)">${e.id < 0 ? "英雄身板" : e.u ? "大招" : "普通技能"}</div>
     </div></div>
     <div class="stats">
-      <div>自身胜率 <b class="${wrClass(e.wr)}">${pct(e.wr)}</b>（${e.np} 场）${e.hs ? ` · 高分段 <b class="${wrClass(e.hs)}">${pct(e.hs)}</b>` : ""}${e.ap ? ` · 平均被抢 ${pickTag(e.ap)}（第 ${e.ap} 手）` : ""}</div>
+      <div>自身胜率 <b class="${wrClass(e.wr)}">${pct(e.wr)}</b>（${e.np} 场）${e.hs ? ` · 高分段 <b class="${wrClass(e.hs)}">${pct(e.hs)}</b>` : ""}${rankTag(e.id) ? ` · 池内顺位 ${rankTag(e.id)}（全局平均第 ${e.ap} 手）` : ""}</div>
       <div>★ 与我已选最佳配对：${line(mine)}</div>
       <div>○ 与池内条目最佳配对：${line(inPool)}</div>
     </div>

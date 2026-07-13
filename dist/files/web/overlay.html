@@ -75,11 +75,17 @@ const pair = (a, b) => pairMap.get((a < b ? a : b) + "_" + (a < b ? b : a));
 const icon = e => e.id < 0 ? `img/heroes/${e.s}.png` : `img/abilities/${e.s}.png`;
 const pct = x => (x * 100).toFixed(1) + "%";
 const wrClass = x => x >= 0.52 ? "wr-hi" : x <= 0.48 ? "wr-lo" : "wr-mid";
-// 平均被抢手数(1-50) → "轮-抢"：向上取整后按 10 手一轮折算，如 3.4→1-4、10.5→2-1
-const pickTag = ap => {
-  if (ap == null) return "";
-  const t = Math.ceil(ap), r = Math.ceil(t / 10);
-  return `${r}-${t - (r - 1) * 10}`;
+// 池内顺位 → "轮-抢"：本池条目按平均被抢手数排出第 N 顺位，
+// 10 手一轮折算显示，第 1 名 = 1-1，第 13 名 = 2-3
+function buildRank(poolIds) {
+  return new Map([...poolIds].map(id => byId.get(id)).filter(e => e && e.ap != null)
+    .sort((a, b) => a.ap - b.ap).map((e, i) => [e.id, i + 1]));
+}
+const rankTag = (rank, id) => {
+  const n = rank.get(id);
+  if (!n) return "";
+  const r = Math.ceil(n / 10);
+  return `${r}-${n - (r - 1) * 10}`;
 };
 const $ = q => document.querySelector(q);
 
@@ -102,6 +108,7 @@ function render(result) {
     h.ult.forEach(i => poolIds.add(i));
     h.norm.forEach(i => poolIds.add(i));
   }
+  const rank = buildRank(poolIds);
   const el = $("#pool");
   el.innerHTML = `<div class="note">识别 ${heroes.length} 个候选英雄（强锁 ${result.lockedCount}）
     · ${result.elapsedMs || "?"}ms${heroes.length < 12 ? " · 不足 12 请目视补充" : ""}</div>`;
@@ -112,13 +119,15 @@ function render(result) {
       const e = byId.get(id);
       const cell = document.createElement("div");
       cell.className = "cell" + (e.id < 0 ? " body-c" : e.u ? " ult-c" : "");
-      // 最多 3 条池内最佳配对，从上到下按胜率排
+      // 最多 3 条池内最佳配对，从上到下按胜率排，附搭档的池内顺位
       const tops = topPairsInPool(id, poolIds);
-      const pairHtml = tops.length ? tops.map(bp =>
-        `<div class="cpair">○<img src="${icon(byId.get(bp.oid))}" title="${byId.get(bp.oid).n}">${pct(bp.p.wr)}</div>`
-      ).join("") : `<div class="cpair">—</div>`;
+      const pairHtml = tops.length ? tops.map(bp => {
+        const rt = rankTag(rank, bp.oid);
+        return `<div class="cpair">○<img src="${icon(byId.get(bp.oid))}" title="${byId.get(bp.oid).n}">${pct(bp.p.wr)}${rt ? `<span class="cpk">${rt}</span>` : ""}</div>`;
+      }).join("") : `<div class="cpair">—</div>`;
+      const myRt = rankTag(rank, id);
       cell.innerHTML = `<img class="main" loading="lazy" src="${icon(e)}" title="${e.n}">
-        <div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}${e.ap ? `<span class="cpk">${pickTag(e.ap)}</span>` : ""}</div>${pairHtml}`;
+        <div class="cwr ${wrClass(e.wr)}">${pct(e.wr)}${myRt ? `<span class="cpk">${myRt}</span>` : ""}</div>${pairHtml}`;
       g.appendChild(cell);
     }
     el.appendChild(g);
