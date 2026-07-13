@@ -184,13 +184,10 @@ const pair = (a, b) => pairMap.get(a < b ? a + "_" + b : b + "_" + a);
 const icon = e => e.id < 0 ? `img/heroes/${e.s}.png` : `img/abilities/${e.s}.png`;
 const pct = x => (x * 100).toFixed(1) + "%";
 const wrClass = x => x >= 0.52 ? "wr-hi" : x <= 0.48 ? "wr-lo" : "wr-mid";
-// 池内顺位 → "轮-抢"：本局条目按平均被抢手数排出第 N 顺位，
-// 10 手一轮折算显示，第 1 名 = 1-1，第 13 名 = 2-3
+// 池内顺位：本局条目按平均被抢手数排出第 N 顺位，直接显示 #N
 const rankTag = id => {
   const n = G && G.rank && G.rank.get(id);
-  if (!n) return "";
-  const r = Math.ceil(n / 10);
-  return `${r}-${n - (r - 1) * 10}`;
+  return n ? `#${n}` : "";
 };
 const MIN_N = 200, LOW_N = 300;
 
