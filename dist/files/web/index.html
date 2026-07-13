@@ -16,11 +16,6 @@ body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,"PingFang SC
 button{font:inherit;border:0;cursor:pointer;border-radius:var(--radius)}
 
 /* 口令门 */
-#gate{position:fixed;inset:0;z-index:99;background:var(--bg);display:flex;align-items:center;justify-content:center}
-.gate-box{text-align:center;padding:32px 28px;background:var(--panel);border:1px solid var(--line);border-radius:16px;width:min(320px,86vw)}
-#gate-input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:16px;text-align:center;outline:none}
-#gate-input:focus{border-color:var(--gold)}
-#gate-btn{width:100%;padding:12px;background:var(--gold);color:#1a1408;font-size:16px;font-weight:700;margin-top:10px}
 
 /* 顶栏 */
 #topbar{position:sticky;top:0;z-index:20;background:rgba(13,17,23,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;align-items:center;gap:8px}
@@ -114,16 +109,6 @@ button{font:inherit;border:0;cursor:pointer;border-radius:var(--radius)}
 </style>
 </head>
 <body>
-<div id="gate" class="hidden">
-  <div class="gate-box">
-    <div style="font-size:22px;color:var(--gold);font-weight:700;margin-bottom:6px">AD 草稿陪练</div>
-    <div style="font-size:13px;color:var(--dim);margin-bottom:16px">朋友内测中，请输入口令</div>
-    <input id="gate-input" type="text" placeholder="口令" autocomplete="off">
-    <button id="gate-btn">进入</button>
-    <div id="gate-err" style="font-size:12px;color:var(--red);margin-top:8px;visibility:hidden">口令不对哦</div>
-  </div>
-</div>
-
 <div id="topbar">
   <span class="title">AD 陪练</span>
   <span class="meta" id="meta"></span>
@@ -293,23 +278,6 @@ document.addEventListener("error", ev => {
   const m = (img.getAttribute("src") || "").match(/img\/(heroes|abilities)\/(.+\.png)$/);
   if (m) img.src = `${CDN}/${m[1]}/${m[2]}`;
 }, true);
-
-// ---------- 口令门（轻量防路人，非安全边界） ----------
-const GATE_CODE = "yiyoude";
-if (localStorage.getItem("ad_gate") !== GATE_CODE) {
-  $("#gate").classList.remove("hidden");
-  const tryGate = () => {
-    if ($("#gate-input").value.trim() === GATE_CODE) {
-      localStorage.setItem("ad_gate", GATE_CODE);
-      $("#gate").classList.add("hidden");
-    } else {
-      $("#gate-err").style.visibility = "visible";
-      $("#gate-input").value = "";
-    }
-  };
-  $("#gate-btn").onclick = tryGate;
-  $("#gate-input").addEventListener("keydown", e => { if (e.key === "Enter") tryGate(); });
-}
 
 $("#start-sub").textContent = `数据: windrun.io 快照 ${B.version} · patch ${B.patch}`;
 $("#meta").textContent = `patch ${B.patch}`;

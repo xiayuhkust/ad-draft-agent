@@ -10,6 +10,8 @@
 
 import hashlib
 import json
+import time
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -36,7 +38,10 @@ def check_and_update() -> dict:
     if not base:
         return {"enabled": False}
 
-    manifest = json.loads(_fetch(f"{base}/manifest.json"))
+    # CDN（CloudBase/jsdelivr）对静态文件缓存极久：清单加当前时间戳、
+    # 文件加发布时间戳作查询串，保证每次发布后拉到的都是新对象
+    manifest = json.loads(_fetch(f"{base}/manifest.json?t={int(time.time())}"))
+    stamp = urllib.parse.quote(str(manifest.get("publishedAt", "")))
     data_prefixes = tuple(manifest.get("dataPrefixes", ()))
     updated, code_changed = [], False
     for rel, remote_hash in manifest["files"].items():
@@ -46,7 +51,7 @@ def check_and_update() -> dict:
         local = ROOT / rel
         if local.exists() and _sha(local) == remote_hash:
             continue
-        data = _fetch(f"{base}/files/{rel}")
+        data = _fetch(f"{base}/files/{rel}?v={stamp}")
         if hashlib.sha256(data).hexdigest()[:16] != remote_hash:
             continue  # 传输损坏，跳过本文件，下次再试
         local.parent.mkdir(parents=True, exist_ok=True)
