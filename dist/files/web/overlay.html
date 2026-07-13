@@ -40,6 +40,7 @@ body.folded #btn-close,body.folded #upbar,body.folded #content{display:none}
 body.folded{background:var(--panel)}
 body.folded #bar{display:inline-flex;border-bottom:none}
 .hidden{display:none!important}
+.weblink{color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 #upbar{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:12px;
   background:#2a2412;border-bottom:1px solid var(--gold);color:var(--gold)}
 #upbar button{background:var(--gold);color:#1a1408;border:none;border-radius:6px;
@@ -61,7 +62,7 @@ body.folded #bar{display:inline-flex;border-bottom:none}
   <button id="btn-dl">下载</button><button id="btn-updismiss">✕</button>
 </div>
 <div id="content">
-  <div id="empty">进入技能征召选人界面后<br>按 <kbd>Ctrl+Shift+O</kbd> 或点上方 📷<br><br>识别结果会显示每个英雄的<br>身板/技能胜率与最佳配对</div>
+  <div id="empty">进入技能征召选人界面后<br>按 <kbd>Ctrl+Shift+O</kbd> 或点上方 📷<br><br>识别结果会显示每个英雄的<br>身板/技能胜率与最佳配对<br><br><span class="weblink">🌐 打开网页版（浏览器里模拟开局练手）</span></div>
   <div id="pool"></div>
 </div>
 
@@ -135,8 +136,19 @@ function render(result) {
     }
     el.appendChild(g);
   }
+  el.insertAdjacentHTML("beforeend",
+    `<div class="note" style="text-align:center;padding-top:6px"><span class="weblink">🌐 网页版练习</span></div>`);
   $("#empty").style.display = "none";
 }
+
+// 网页版入口：新版宿主用系统浏览器打开；老版宿主把链接亮在状态栏
+const WEB_URL = "https://xiayuyosemi-d2goomeghaee6ee5b-1450725484.tcloudbaseapp.com/ad/";
+document.addEventListener("click", e => {
+  if (!e.target.closest(".weblink")) return;
+  const api = window.pywebview && window.pywebview.api;
+  if (api && api.open_url) api.open_url(WEB_URL);
+  else $("#status").textContent = "网页版: " + WEB_URL;
+});
 
 // JS 异常直接显示在状态栏（悬浮窗没有 devtools，必须自曝）
 window.onerror = (msg, src, line) => {
