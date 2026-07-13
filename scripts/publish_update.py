@@ -75,9 +75,10 @@ def main():
         "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "dataPrefixes": list(DATA_PREFIXES),
         # 冻结版手动检查更新时按此直链下载新安装包（发版命名约定不可改）
-        # 走 CloudBase 国内 CDN（deploy_cloudbase.ps1 会上传），GitHub Releases 作备份
+        # 走 CloudBase 国内 CDN（deploy_cloudbase.ps1 会上传），GitHub Releases 作备份；
+        # 时间戳参数保证 CDN 不回吐同名旧对象
         "installerUrl": ("https://xiayuyosemi-d2goomeghaee6ee5b-1450725484.tcloudbaseapp.com"
-                         f"/ad/dl/ADBox-Setup-{app_version}.exe"),
+                         f"/ad/dl/ADBox-Setup-{app_version}.exe?v={int(time.time())}"),
         "files": files,
     }
     (DIST / "manifest.json").write_text(
