@@ -1,11 +1,11 @@
 {
  "appVersion": "1.3.7",
  "dataVersion": "7.41d-2026-07-13",
- "publishedAt": "2026-07-13T09:48:12",
+ "publishedAt": "2026-07-13T09:55:10",
  "dataPrefixes": [
   "web/"
  ],
- "installerUrl": "https://xiayuyosemi-d2goomeghaee6ee5b-1450725484.tcloudbaseapp.com/ad/dl/ADBox-Setup-1.3.7.exe?v=1783907292",
+ "installerUrl": "https://xiayuyosemi-d2goomeghaee6ee5b-1450725484.tcloudbaseapp.com/ad/dl/ADBox-Setup-1.3.7.exe?v=1783907710",
  "files": {
   "VERSION": "2e2fb4f506f3685f",
   "server.py": "1d5ade559aeccc80",
@@ -18,7 +18,7 @@
   "plugin/hotkey_capture.py": "d10e118c3964c7fa",
   "plugin/overlay.py": "5904279b9448d86a",
   "web/index.html": "ac4cb94267453bdf",
-  "web/overlay.html": "a793409c2ea563e7",
+  "web/overlay.html": "9276dbea617105ba",
   "web/data/bundle.js": "b118982a83483b2c",
   "web/img/abilities/abaddon_aphotic_shield.png": "e18d5cce26b0b078",
   "web/img/abilities/abaddon_borrowed_time.png": "190094cc07bf8be3",

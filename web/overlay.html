@@ -33,9 +33,12 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padd
 .cell .cpair{font-size:9px;color:var(--dim);display:flex;align-items:center;justify-content:center;gap:2px}
 .cell .cpair img{width:12px;height:12px;border-radius:2px;object-fit:cover}
 .wr-hi{color:var(--green)} .wr-lo{color:var(--red)} .wr-mid{color:var(--text)}
-/* 折叠态：窗口缩成小徽标，只留 ▼ 展开按钮（新版宿主生效，老版 exe 回退原布局） */
-body.folded .title,body.folded .status,body.folded #btn-cap,body.folded #btn-upd,
-body.folded #btn-close,body.folded #upbar{display:none}
+/* 折叠态：窗口缩成小徽标，只留 📷 识别 + ▼ 展开（新版宿主生效，老版 exe 回退原布局）。
+   bar 改 inline-flex 以便 JS 量出自然宽高传给宿主；背景统一面板色，杜绝残留色条 */
+body.folded .title,body.folded .status,body.folded #btn-upd,
+body.folded #btn-close,body.folded #upbar,body.folded #content{display:none}
+body.folded{background:var(--panel)}
+body.folded #bar{display:inline-flex;border-bottom:none}
 .hidden{display:none!important}
 #upbar{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:12px;
   background:#2a2412;border-bottom:1px solid var(--gold);color:var(--gold)}
@@ -164,16 +167,25 @@ $("#btn-cap").onclick = async () => {
   if (window.pywebview) window.pywebview.api.capture();
 };
 let folded = false;
+// 窗口物理宽(480) / 页面 CSS 宽：换算比（吸收 DPI 缩放差异），页面加载时窗口必为展开态
+const PXR = 480 / window.innerWidth;
 function setFold(f) {
   folded = f;
-  $("#content").style.display = folded ? "none" : "";
   $("#btn-fold").textContent = folded ? "▼" : "▁";
+  // 先套折叠样式（只剩 📷+▼ 的紧凑条），再量出实际宽高让宿主收窗
+  document.body.classList.toggle("folded", folded);
+  $("#btn-cap").textContent = folded ? "📷" : "📷 识别";
   if (!window.pywebview) return;
-  // 新版宿主 fold 接受尺寸参数（折叠缩成 56x42 小徽标）；
-  // 老版 exe 只认 fold(folded)，reject 后回退且不套折叠样式（保持整条栏可用）
-  window.pywebview.api.fold(folded, folded ? 56 : 480, folded ? 42 : 820)
-    .then(() => document.body.classList.toggle("folded", folded))
-    .catch(() => { document.body.classList.remove("folded"); window.pywebview.api.fold(folded); });
+  const api = window.pywebview.api;
+  const bar = $("#bar");
+  const w = folded ? Math.ceil((bar.offsetWidth + 2) * PXR) : 480;
+  const h = folded ? Math.ceil((bar.offsetHeight + 2) * PXR) : 820;
+  // 老版 exe 宿主只认 fold(folded)，reject 后回退且不套折叠样式（保持整条栏可用）
+  api.fold(folded, w, h).catch(() => {
+    document.body.classList.remove("folded");
+    $("#btn-cap").textContent = "📷 识别";
+    api.fold(folded);
+  });
 }
 $("#btn-fold").onclick = () => setFold(!folded);
 $("#btn-close").onclick = () => { if (window.pywebview) window.pywebview.api.close(); };
