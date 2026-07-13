@@ -34,7 +34,14 @@ kbd{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padd
 .cell .cpair img{width:12px;height:12px;border-radius:2px;object-fit:cover}
 .wr-hi{color:var(--green)} .wr-lo{color:var(--red)} .wr-mid{color:var(--text)}
 /* 折叠态：窗口缩成小徽标，只留 ▼ 展开按钮（新版宿主生效，老版 exe 回退原布局） */
-body.folded .title,body.folded .status,body.folded #btn-cap,body.folded #btn-close{display:none}
+body.folded .title,body.folded .status,body.folded #btn-cap,body.folded #btn-upd,
+body.folded #btn-close,body.folded #upbar{display:none}
+.hidden{display:none!important}
+#upbar{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:12px;
+  background:#2a2412;border-bottom:1px solid var(--gold);color:var(--gold)}
+#upbar button{background:var(--gold);color:#1a1408;border:none;border-radius:6px;
+  padding:3px 12px;font:inherit;font-weight:700;cursor:pointer}
+#upbar #btn-updismiss{background:none;color:var(--dim);font-weight:400;padding:3px 4px}
 </style>
 </head>
 <body>
@@ -42,8 +49,13 @@ body.folded .title,body.folded .status,body.folded #btn-cap,body.folded #btn-clo
   <span class="title">AD 盒子</span>
   <span class="status" id="status">待命 · 游戏中按 Ctrl+Shift+O</span>
   <button id="btn-cap">📷 识别</button>
+  <button id="btn-upd" title="检查更新">⟳</button>
   <button id="btn-fold">▁</button>
   <button id="btn-close">✕</button>
+</div>
+<div id="upbar" class="hidden">
+  <span style="flex:1">发现新版 <b id="upver"></b></span>
+  <button id="btn-dl">下载</button><button id="btn-updismiss">✕</button>
 </div>
 <div id="content">
   <div id="empty">进入技能征召选人界面后<br>按 <kbd>Ctrl+Shift+O</kbd> 或点上方 📷<br><br>识别结果会显示每个英雄的<br>身板/技能胜率与最佳配对</div>
@@ -156,6 +168,36 @@ function setFold(f) {
 }
 $("#btn-fold").onclick = () => setFold(!folded);
 $("#btn-close").onclick = () => { if (window.pywebview) window.pywebview.api.close(); };
+
+// 手动检查更新：数据/页面就地热更；程序新版弹"下载"横条（老版宿主无此 API 则提示手动下载）
+const RELEASES = "https://github.com/xiayuhkust/ad-draft-agent/releases/latest";
+$("#btn-updismiss").onclick = () => $("#upbar").classList.add("hidden");
+$("#btn-upd").onclick = async () => {
+  const api = window.pywebview && window.pywebview.api;
+  if (!api || !api.check_update) {
+    $("#status").textContent = "此版本盒子不支持手动更新，请到 GitHub Releases 下载最新安装包";
+    return;
+  }
+  $("#status").textContent = "检查更新中…";
+  try {
+    const r = await api.check_update();
+    if (!r.ok) { $("#status").textContent = "检查失败: " + r.reason; return; }
+    if (!r.enabled) { $("#status").textContent = "未配置更新源（exe 旁缺 update_url.txt）"; return; }
+    if (r.newInstaller) {
+      $("#upver").textContent = "v" + r.appVersion;
+      $("#upbar").classList.remove("hidden");
+      $("#status").textContent = `当前 v${r.localVersion || "?"}，可更新到 v${r.appVersion}`;
+      $("#btn-dl").onclick = () => api.open_url(r.installerUrl || RELEASES);
+    } else if (r.updated && r.updated.length) {
+      $("#status").textContent = `已更新 ${r.updated.length} 个文件` +
+        (r.codeChanged ? "，重启盒子后生效" : "，刷新即生效");
+    } else {
+      $("#status").textContent = `已是最新 v${r.localVersion || r.appVersion} · 数据 ${r.dataVersion}`;
+    }
+  } catch (e) {
+    $("#status").textContent = "检查更新出错: " + e;
+  }
+};
 </script>
 </body>
 </html>

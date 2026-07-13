@@ -16,6 +16,7 @@ import sys
 import threading
 import time
 import urllib.request
+import webbrowser
 from pathlib import Path
 
 # windowed exe 没有控制台：stdout/stderr 为 None，print 会崩 → 重定向到日志文件
@@ -99,6 +100,20 @@ def do_capture():
 class Api:
     def capture(self):
         threading.Thread(target=do_capture, daemon=True).start()
+
+    def check_update(self):
+        """手动检查更新（pywebview 每次调用独立线程，阻塞网络请求无妨）。"""
+        from addraft import updater
+        try:
+            r = updater.check_and_update()
+            r["ok"] = True
+            return r
+        except Exception as e:
+            return {"ok": False, "reason": str(e)}
+
+    def open_url(self, url):
+        if isinstance(url, str) and url.startswith("https://"):
+            webbrowser.open(url)
 
     def fold(self, folded, w=None, h=None):
         # 尺寸由页面传入（随 web 热更可调）；老页面不传参则用内置默认

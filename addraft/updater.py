@@ -66,4 +66,6 @@ def check_and_update() -> dict:
         "dataVersion": manifest.get("dataVersion"),
         # 冻结版代码不热更：远端 app 版本更高时提示下载新安装包
         "newInstaller": IS_FROZEN and manifest.get("appVersion") != local_app,
+        "installerUrl": manifest.get("installerUrl"),
+        "localVersion": local_app,
     }

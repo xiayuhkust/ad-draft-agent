@@ -74,6 +74,9 @@ def main():
         "dataVersion": data_version,
         "publishedAt": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "dataPrefixes": list(DATA_PREFIXES),
+        # 冻结版手动检查更新时按此直链下载新安装包（发版命名约定不可改）
+        "installerUrl": ("https://github.com/xiayuhkust/ad-draft-agent/releases/download/"
+                         f"v{app_version}/ADBox-Setup-{app_version}.exe"),
         "files": files,
     }
     (DIST / "manifest.json").write_text(
