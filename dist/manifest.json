@@ -1,11 +1,11 @@
 {
  "appVersion": "1.3.7",
- "dataVersion": "7.41d-2026-07-20",
- "publishedAt": "2026-07-20T09:00:18",
+ "dataVersion": "7.41d-2026-07-21",
+ "publishedAt": "2026-07-21T09:00:18",
  "dataPrefixes": [
   "web/"
  ],
- "installerUrl": "https://xiayuyosemi-d2goomeghaee6ee5b-1450725484.tcloudbaseapp.com/ad/dl/ADBox-Setup-1.3.7.exe?v=1784509218",
+ "installerUrl": "https://xiayuyosemi-d2goomeghaee6ee5b-1450725484.tcloudbaseapp.com/ad/dl/ADBox-Setup-1.3.7.exe?v=1784595618",
  "files": {
   "VERSION": "2e2fb4f506f3685f",
   "server.py": "1d5ade559aeccc80",
@@ -19,7 +19,7 @@
   "plugin/overlay.py": "5904279b9448d86a",
   "web/index.html": "ec18ec6f949d09a0",
   "web/overlay.html": "b5a1827874110b9c",
-  "web/data/bundle.js": "b7b7b45669ea8d0e",
+  "web/data/bundle.js": "91947add7434724c",
   "web/img/abilities/abaddon_aphotic_shield.png": "e18d5cce26b0b078",
   "web/img/abilities/abaddon_borrowed_time.png": "190094cc07bf8be3",
   "web/img/abilities/abaddon_death_coil.png": "390527527f4375f6",
