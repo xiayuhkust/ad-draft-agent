@@ -1,14 +1,14 @@
 {
-  "snapshotVersion": "7.41d-2026-08-01",
+  "snapshotVersion": "7.41d-2026-08-02",
   "patch": "7.41d",
-  "generatedAt": "2026-08-01T01:00:19Z",
-  "contentHash": "476fd2f2f424434a",
+  "generatedAt": "2026-08-02T01:00:18Z",
+  "contentHash": "028edf5ef94eb015",
   "source": "https://windrun.io (unofficial API, fetched at most once per run)",
   "files": {
     "static_abilities.json": {
       "endpoint": "static/abilities",
       "bytes": 923023,
-      "sha256": "3163c1f403f772f9"
+      "sha256": "4e8ddbaf8c688726"
     },
     "static_heroes.json": {
       "endpoint": "static/heroes",
@@ -17,23 +17,23 @@
     },
     "abilities.json": {
       "endpoint": "abilities",
-      "bytes": 154196,
-      "sha256": "aeffadb55f54a8f2"
+      "bytes": 154191,
+      "sha256": "f7edd4432bc00127"
     },
     "ability_pairs.json": {
       "endpoint": "ability-pairs",
-      "bytes": 753804,
-      "sha256": "4ab2df19c575d907"
+      "bytes": 753833,
+      "sha256": "12c13fc1b44e518f"
     },
     "heroes.json": {
       "endpoint": "heroes",
-      "bytes": 10012,
-      "sha256": "fee0e42c39ab1ddd"
+      "bytes": 10017,
+      "sha256": "e656420b06dd6774"
     },
     "ability_high_skill.json": {
       "endpoint": "ability-high-skill",
-      "bytes": 306920,
-      "sha256": "713d60424f8728f6"
+      "bytes": 306939,
+      "sha256": "347c71b4e8a13f46"
     }
   }
 }
